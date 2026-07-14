@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オセロゲーム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="choice-screen" class="choice-screen" aria-label="色を選択">
+    <button class="choice-button choice-white" type="button" data-choice="white">白</button>
+    <button class="choice-button choice-black" type="button" data-choice="black">黒</button>
+  </div>
+
+  <div id="pre-game" class="pre-game hidden" role="status" aria-live="assertive">
+    <p id="pre-game-message"></p>
+  </div>
+
+  <main id="game-screen" class="game-screen hidden">
+    <section class="status-panel" aria-live="polite">
+      <div class="score-card">
+        <span>あなた</span>
+        <strong id="player-score">2</strong>
+        <small>黒</small>
+      </div>
+      <div class="turn-panel">
+        <span id="turn-label">開始</span>
+        <strong id="status-message">準備中</strong>
+      </div>
+      <div class="score-card">
+        <span>CPU</span>
+        <strong id="cpu-score">2</strong>
+        <small>白</small>
+      </div>
+    </section>
+
+    <section class="board-area" aria-label="オセロ盤">
+      <div id="board" class="board"></div>
+    </section>
+  </main>
+
+  <div id="win-screen" class="win-screen hidden" aria-label="勝利動画">
+    <video id="win-video" src="win.mp4" playsinline></video>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

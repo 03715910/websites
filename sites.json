@@ -8,5 +8,15 @@
     "tags": ["static", "template"],
     "accent": "#23766b",
     "secondary": "#d95f52"
+  },
+  {
+    "title": "オセロゲーム",
+    "slug": "othello",
+    "description": "CPUと対戦できるブラウザ版オセロゲーム。",
+    "path": "sites/othello/",
+    "status": "moved",
+    "tags": ["game", "othello"],
+    "accent": "#0b7d4d",
+    "secondary": "#f0b44c"
   }
 ]

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Websites</title>
+    <meta name="description" content="小さなWebサイトをまとめるプロジェクトです。" />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Websites home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Websites</span>
+      </a>
+
+      <div class="toolbar" aria-label="サイト一覧の操作">
+        <label class="search-field">
+          <span class="sr-only">サイトを検索</span>
+          <input id="siteSearch" type="search" placeholder="Search sites" autocomplete="off" />
+        </label>
+        <label class="select-field">
+          <span class="sr-only">タグで絞り込み</span>
+          <select id="tagFilter" aria-label="タグで絞り込み">
+            <option value="all">All tags</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <section class="overview" aria-labelledby="pageTitle">
+        <div class="overview-copy">
+          <p class="kicker">Website collection</p>
+          <h1 id="pageTitle">Websites</h1>
+          <p>実験中のページ、作品、ツールをまとめて育てる場所。</p>
+        </div>
+
+        <div class="metrics" aria-label="プロジェクトの概要">
+          <div class="metric">
+            <span id="siteCount">0</span>
+            <small>sites</small>
+          </div>
+          <div class="metric">
+            <span id="tagCount">0</span>
+            <small>tags</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-band" aria-labelledby="sitesTitle">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Index</p>
+            <h2 id="sitesTitle">All Sites</h2>
+          </div>
+          <p id="resultCount" class="result-count">0 items</p>
+        </div>
+
+        <div id="siteGrid" class="site-grid" aria-live="polite"></div>
+        <p id="emptyState" class="empty-state" hidden>一致するサイトがありません。</p>
+      </section>
+    </main>
+
+    <template id="siteCardTemplate">
+      <article class="site-card">
+        <a class="site-link" href="#">
+          <div class="preview" aria-hidden="true">
+            <span class="preview-bar"></span>
+            <span class="preview-panel preview-panel-a"></span>
+            <span class="preview-panel preview-panel-b"></span>
+            <span class="preview-line preview-line-a"></span>
+            <span class="preview-line preview-line-b"></span>
+          </div>
+          <div class="site-body">
+            <div class="site-title-row">
+              <h3></h3>
+              <span class="status"></span>
+            </div>
+            <p class="description"></p>
+            <div class="tags"></div>
+          </div>
+        </a>
+      </article>
+    </template>
+
+    <script id="fallbackSites" type="application/json">
+      [
+        {
+          "title": "Starter Site",
+          "slug": "starter",
+          "description": "最初の小さなWebサイト。ここから雰囲気や構成を自由に変えられます。",
+          "path": "sites/starter/",
+          "status": "draft",
+          "tags": ["static", "template"],
+          "accent": "#23766b",
+          "secondary": "#d95f52"
+        }
+      ]
+    </script>
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>

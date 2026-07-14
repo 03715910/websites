@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Starter Site",
+    "slug": "starter",
+    "description": "最初の小さなWebサイト。ここから雰囲気や構成を自由に変えられます。",
+    "path": "sites/starter/",
+    "status": "draft",
+    "tags": ["static", "template"],
+    "accent": "#23766b",
+    "secondary": "#d95f52"
+  }
+]

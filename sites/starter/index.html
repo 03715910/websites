@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Starter Site</title>
+    <meta name="description" content="最初の小さなWebサイトです。" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="../../" class="back-link">Websites</a>
+      <nav aria-label="ページ内リンク">
+        <a href="#notes">Notes</a>
+        <a href="#gallery">Gallery</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="hero-copy">
+          <p class="kicker">Starter</p>
+          <h1 id="heroTitle">A small page with room to grow.</h1>
+          <p>思いついたものを、まず形にするためのシンプルな出発点。</p>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <span class="tile tile-a"></span>
+          <span class="tile tile-b"></span>
+          <span class="tile tile-c"></span>
+          <span class="rail"></span>
+        </div>
+      </section>
+
+      <section id="notes" class="notes" aria-labelledby="notesTitle">
+        <div>
+          <p class="kicker">Notes</p>
+          <h2 id="notesTitle">Sketch the idea.</h2>
+        </div>
+        <p>
+          色、文字、レイアウトを少しずつ変えながら、自分のサイトに育てていけます。
+        </p>
+      </section>
+
+      <section id="gallery" class="gallery" aria-label="ビジュアルギャラリー">
+        <figure>
+          <span class="sample sample-a" aria-hidden="true"></span>
+          <figcaption>Landing</figcaption>
+        </figure>
+        <figure>
+          <span class="sample sample-b" aria-hidden="true"></span>
+          <figcaption>Tool</figcaption>
+        </figure>
+        <figure>
+          <span class="sample sample-c" aria-hidden="true"></span>
+          <figcaption>Story</figcaption>
+        </figure>
+      </section>
+    </main>
+  </body>
+</html>

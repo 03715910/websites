@@ -8,6 +8,7 @@
   --board: #d9a652;
   --board-alt: #c98f3f;
   --player: #fff2a8;
+  --ally: #d8f0d2;
   --enemy: #f0d6ad;
   --move: #f6c84f;
   --danger: #b7412c;
@@ -203,6 +204,10 @@ h1 {
   background: var(--player);
 }
 
+.piece.ally {
+  background: var(--ally);
+}
+
 .piece.enemy {
   background: var(--enemy);
   transform: rotate(180deg);
@@ -217,6 +222,14 @@ h1 {
   position: absolute;
   bottom: 7px;
   font-size: 0.5rem;
+  letter-spacing: 0;
+}
+
+.piece.ally::after {
+  content: "AUTO";
+  position: absolute;
+  bottom: 7px;
+  font-size: 0.46rem;
   letter-spacing: 0;
 }
 

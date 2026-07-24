@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>逆命将棋</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="hud" aria-label="ゲーム情報">
+        <div>
+          <p class="eyebrow">Shogi Variant</p>
+          <h1>逆命将棋</h1>
+        </div>
+        <div class="score-row">
+          <div class="score-card">
+            <span>勝利条件</span>
+            <strong>王を取る</strong>
+          </div>
+          <div class="score-card danger">
+            <span>敗北条件</span>
+            <strong>兵を取られる</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="play-area">
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="将棋盤"></div>
+        </div>
+
+        <aside class="side-panel" aria-label="状態">
+          <div class="turn-box">
+            <span id="turnLabel">あなたの番</span>
+            <strong id="message">黄色い場所へ兵を進めてください。</strong>
+          </div>
+
+          <div class="rule-box">
+            <h2>ルール</h2>
+            <p>あなたは兵1体だけを動かします。1マスずつ進み、敵の王を取れば勝ちです。</p>
+            <p>敵の金や歩、王に兵を取られると負けです。</p>
+          </div>
+
+          <button id="restartButton" type="button">最初から</button>
+        </aside>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

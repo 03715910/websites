@@ -33,8 +33,8 @@
 
           <section class="command-panel" aria-label="自分のターン操作">
             <div class="command-group">
-              <p class="panel-label">下位の歩への命令</p>
-              <div class="segmented" role="group" aria-label="歩への命令">
+              <p class="panel-label">下位の駒への命令</p>
+              <div class="segmented" role="group" aria-label="下位の駒への命令">
                 <button type="button" data-command="attack">攻撃</button>
                 <button type="button" data-command="evade">退避</button>
                 <button type="button" data-command="hold">待機</button>
@@ -44,11 +44,15 @@
             <div class="move-group">
               <p class="panel-label">自分の銀を動かす</p>
               <div class="dpad" aria-label="移動方向">
+                <button type="button" data-dir="upLeft" class="up-left">↖</button>
                 <button type="button" data-dir="up" class="up">↑</button>
+                <button type="button" data-dir="upRight" class="up-right">↗</button>
                 <button type="button" data-dir="left" class="left">←</button>
                 <button type="button" data-dir="stay" class="stay">待</button>
                 <button type="button" data-dir="right" class="right">→</button>
+                <button type="button" data-dir="downLeft" class="down-left">↙</button>
                 <button type="button" data-dir="down" class="down">↓</button>
+                <button type="button" data-dir="downRight" class="down-right">↘</button>
               </div>
             </div>
           </section>
@@ -57,23 +61,24 @@
         <aside class="side-panel" aria-label="状態">
           <div class="turn-box">
             <span id="turnLabel">あなたの番</span>
-            <strong id="message">歩への命令を選び、自分の銀を動かしてください。</strong>
+            <strong id="message">下位の駒への命令を選び、自分の銀を動かしてください。</strong>
           </div>
 
           <div class="rule-box">
             <h2>ルール</h2>
-            <p>あなたは中間階級の銀です。自分より下の歩には大枠の命令を出せます。</p>
-            <p>自分より上の王、金、飛は勝手に動きます。味方でも進路を邪魔することがあります。</p>
-            <p>自分の銀、下位の歩、上位の駒が同時に動いた後、敵が自動で動きます。</p>
+            <p>本物の将棋と同じく、味方20枚・敵20枚で開始します。</p>
+            <p>あなたは中間階級の銀です。自分より下の歩・香・桂には大枠の命令を出せます。</p>
+            <p>自分より上、または同格の味方は勝手に動きます。味方でも進路を邪魔することがあります。</p>
+            <p>自分の銀、下位の駒、上位の駒が同時に動いた後、敵が自動で動きます。</p>
           </div>
 
           <div class="rank-box">
             <h2>階級</h2>
             <ol>
               <li>王: 取られると負け</li>
-              <li>飛・金</li>
+              <li>飛・角・金</li>
               <li>銀: あなた</li>
-              <li>歩: 命令できる兵士</li>
+              <li>桂・香・歩: 命令できる兵士</li>
             </ol>
           </div>
 

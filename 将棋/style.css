@@ -261,14 +261,22 @@ h1 {
 .dpad {
   display: grid;
   grid-template-areas:
-    ". up ."
+    "up-left up up-right"
     "left stay right"
-    ". down .";
+    "down-left down down-right";
   gap: 8px;
+}
+
+.dpad .up-left {
+  grid-area: up-left;
 }
 
 .dpad .up {
   grid-area: up;
+}
+
+.dpad .up-right {
+  grid-area: up-right;
 }
 
 .dpad .left {
@@ -283,8 +291,16 @@ h1 {
   grid-area: right;
 }
 
+.dpad .down-left {
+  grid-area: down-left;
+}
+
 .dpad .down {
   grid-area: down;
+}
+
+.dpad .down-right {
+  grid-area: down-right;
 }
 
 .side-panel {

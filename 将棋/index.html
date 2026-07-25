@@ -3,44 +3,78 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>逆命将棋</title>
+    <title>階級将棋</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="game-shell">
       <section class="hud" aria-label="ゲーム情報">
         <div>
-          <p class="eyebrow">Shogi Variant</p>
-          <h1>逆命将棋</h1>
+          <p class="eyebrow">Rank Command Shogi</p>
+          <h1>階級将棋</h1>
         </div>
         <div class="score-row">
           <div class="score-card">
             <span>勝利条件</span>
-            <strong>王を取る</strong>
+            <strong>敵の王を取る</strong>
           </div>
           <div class="score-card danger">
             <span>敗北条件</span>
-            <strong>兵を取られる</strong>
+            <strong>自分の銀を取られる</strong>
           </div>
         </div>
       </section>
 
       <section class="play-area">
-        <div class="board-wrap">
-          <div id="board" class="board" aria-label="将棋盤"></div>
+        <div class="board-column">
+          <div class="board-wrap">
+            <div id="board" class="board" aria-label="将棋盤"></div>
+          </div>
+
+          <section class="command-panel" aria-label="自分のターン操作">
+            <div class="command-group">
+              <p class="panel-label">下位の歩への命令</p>
+              <div class="segmented" role="group" aria-label="歩への命令">
+                <button type="button" data-command="attack">攻撃</button>
+                <button type="button" data-command="evade">退避</button>
+                <button type="button" data-command="hold">待機</button>
+              </div>
+            </div>
+
+            <div class="move-group">
+              <p class="panel-label">自分の銀を動かす</p>
+              <div class="dpad" aria-label="移動方向">
+                <button type="button" data-dir="up" class="up">↑</button>
+                <button type="button" data-dir="left" class="left">←</button>
+                <button type="button" data-dir="stay" class="stay">待</button>
+                <button type="button" data-dir="right" class="right">→</button>
+                <button type="button" data-dir="down" class="down">↓</button>
+              </div>
+            </div>
+          </section>
         </div>
 
         <aside class="side-panel" aria-label="状態">
           <div class="turn-box">
             <span id="turnLabel">あなたの番</span>
-            <strong id="message">黄色い場所へ兵を進めてください。</strong>
+            <strong id="message">歩への命令を選び、自分の銀を動かしてください。</strong>
           </div>
 
           <div class="rule-box">
             <h2>ルール</h2>
-            <p>あなたは兵1体だけを動かします。1マスずつ進み、敵の王を取れば勝ちです。</p>
-            <p>味方の金と銀は自動で動き、敵の駒や王を狙います。</p>
-            <p>敵の金や歩、王に兵を取られると負けです。</p>
+            <p>あなたは中間階級の銀です。自分より下の歩には大枠の命令を出せます。</p>
+            <p>自分より上の金と飛は勝手に動きます。味方でも進路を邪魔することがあります。</p>
+            <p>自分の銀、下位の歩、上位の駒が同時に動いた後、敵が自動で動きます。</p>
+          </div>
+
+          <div class="rank-box">
+            <h2>階級</h2>
+            <ol>
+              <li>王</li>
+              <li>飛・金</li>
+              <li>銀: あなた</li>
+              <li>歩: 命令できる兵士</li>
+            </ol>
           </div>
 
           <button id="restartButton" type="button">最初から</button>

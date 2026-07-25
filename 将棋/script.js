@@ -1,70 +1,82 @@
 "use strict";
 
 const SIZE = 9;
-const PLAYER_ID = "player";
+const PLAYER_ID = "player-silver";
+const ENEMY_KING_ID = "enemy-king";
 const boardElement = document.getElementById("board");
 const messageElement = document.getElementById("message");
 const turnLabelElement = document.getElementById("turnLabel");
 const restartButton = document.getElementById("restartButton");
+const commandButtons = [...document.querySelectorAll("[data-command]")];
+const directionButtons = [...document.querySelectorAll("[data-dir]")];
 
-const playerMoves = [
-  [-1, -1], [-1, 0], [-1, 1],
-  [0, -1], [0, 1],
-  [1, -1], [1, 0], [1, 1]
-];
-
-const allyMoves = {
-  gold: [
-    [-1, -1], [-1, 0], [-1, 1],
-    [0, -1], [0, 1],
-    [1, 0]
-  ],
-  silver: [
-    [-1, -1], [-1, 0], [-1, 1],
-    [1, -1], [1, 1]
-  ]
+const DIRECTIONS = {
+  up: { row: -1, col: 0, label: "上" },
+  right: { row: 0, col: 1, label: "右" },
+  down: { row: 1, col: 0, label: "下" },
+  left: { row: 0, col: -1, label: "左" },
+  stay: { row: 0, col: 0, label: "待機" }
 };
 
-const enemyMoves = {
-  king: [
-    [-1, -1], [-1, 0], [-1, 1],
-    [0, -1], [0, 1],
-    [1, -1], [1, 0], [1, 1]
-  ],
-  gold: [
-    [-1, 0],
-    [0, -1], [0, 1],
-    [1, -1], [1, 0], [1, 1]
-  ],
-  pawn: [
-    [1, 0]
-  ]
+const STEP_MOVES = [
+  { row: -1, col: 0 },
+  { row: 0, col: 1 },
+  { row: 1, col: 0 },
+  { row: 0, col: -1 }
+];
+
+const COMMANDS = {
+  attack: "攻撃",
+  evade: "退避",
+  hold: "待機"
 };
 
 let pieces = [];
 let phase = "player";
+let selectedCommand = "attack";
 let gameOver = false;
-let validMoves = [];
+let playerHints = [];
+
+for (const button of commandButtons) {
+  button.addEventListener("click", () => {
+    if (phase !== "player" || gameOver) {
+      return;
+    }
+
+    selectedCommand = button.dataset.command;
+    updateCommandButtons();
+    setMessage("あなたの番", `${COMMANDS[selectedCommand]}を歩に命令しました。銀の移動方向を選んでください。`);
+  });
+}
+
+for (const button of directionButtons) {
+  button.addEventListener("click", () => runPlayerTurn(button.dataset.dir));
+}
 
 restartButton.addEventListener("click", startGame);
 startGame();
 
 function startGame() {
   pieces = [
-    { id: PLAYER_ID, side: "player", type: "soldier", label: "兵", row: 8, col: 4 },
-    { id: "ally-gold", side: "ally", type: "gold", label: "金", row: 8, col: 2 },
-    { id: "ally-silver", side: "ally", type: "silver", label: "銀", row: 8, col: 6 },
-    { id: "king", side: "enemy", type: "king", label: "王", row: 0, col: 4 },
-    { id: "gold-left", side: "enemy", type: "gold", label: "金", row: 1, col: 3 },
-    { id: "gold-right", side: "enemy", type: "gold", label: "金", row: 1, col: 5 },
-    { id: "pawn-left", side: "enemy", type: "pawn", label: "歩", row: 2, col: 2 },
-    { id: "pawn-center", side: "enemy", type: "pawn", label: "歩", row: 2, col: 4 },
-    { id: "pawn-right", side: "enemy", type: "pawn", label: "歩", row: 2, col: 6 }
+    { id: "ally-rook", side: "ally", control: "superior", type: "rook", label: "飛", rank: 5, row: 8, col: 1 },
+    { id: "ally-gold", side: "ally", control: "superior", type: "gold", label: "金", rank: 4, row: 8, col: 7 },
+    { id: PLAYER_ID, side: "ally", control: "player", type: "silver", label: "銀", rank: 3, row: 7, col: 4 },
+    { id: "ally-pawn-left", side: "ally", control: "subordinate", type: "pawn", label: "歩", rank: 1, row: 8, col: 3 },
+    { id: "ally-pawn-right", side: "ally", control: "subordinate", type: "pawn", label: "歩", rank: 1, row: 8, col: 5 },
+    { id: ENEMY_KING_ID, side: "enemy", control: "enemy", type: "king", label: "王", rank: 6, row: 0, col: 4 },
+    { id: "enemy-gold", side: "enemy", control: "enemy", type: "gold", label: "金", rank: 4, row: 0, col: 2 },
+    { id: "enemy-silver", side: "enemy", control: "enemy", type: "silver", label: "銀", rank: 3, row: 0, col: 6 },
+    { id: "enemy-pawn-left", side: "enemy", control: "enemy", type: "pawn", label: "歩", rank: 1, row: 1, col: 3 },
+    { id: "enemy-pawn-center", side: "enemy", control: "enemy", type: "pawn", label: "歩", rank: 1, row: 1, col: 4 },
+    { id: "enemy-pawn-right", side: "enemy", control: "enemy", type: "pawn", label: "歩", rank: 1, row: 1, col: 5 }
   ];
   phase = "player";
+  selectedCommand = "attack";
   gameOver = false;
-  updateValidMoves();
-  setMessage("あなたの番", "黄色い場所へ兵を進めてください。味方の金と銀は自動で動きます。");
+  updatePlayerHints();
+  setMessage("あなたの番", "歩への命令を選び、自分の銀を動かしてください。");
+  updateCommandButtons();
+  updateDirectionButtons();
   render();
 }
 
@@ -74,22 +86,21 @@ function render() {
   for (let row = 0; row < SIZE; row += 1) {
     for (let col = 0; col < SIZE; col += 1) {
       const cell = document.createElement("button");
-      const move = validMoves.find((candidate) => candidate.row === row && candidate.col === col);
       const piece = pieceAt(row, col);
+      const hint = playerHints.find((move) => move.row === row && move.col === col);
 
       cell.className = [
         "cell",
         row < 3 ? "enemy-zone" : "",
         row > 5 ? "player-zone" : "",
-        move ? "valid" : "",
-        move?.capture ? "capture" : ""
+        hint ? "valid" : ""
       ].filter(Boolean).join(" ");
       cell.type = "button";
-      cell.setAttribute("aria-label", labelForCell(row, col, piece, move));
-      cell.disabled = !move || gameOver || phase !== "player";
+      cell.disabled = !hint || phase !== "player" || gameOver;
+      cell.setAttribute("aria-label", labelForCell(row, col, piece, hint));
 
-      if (move && !gameOver) {
-        cell.addEventListener("click", () => playPlayerMove(move));
+      if (hint && phase === "player" && !gameOver) {
+        cell.addEventListener("click", () => runPlayerTurn(hint.dir));
       }
 
       if (piece) {
@@ -103,209 +114,363 @@ function render() {
 
 function createPiece(piece) {
   const node = document.createElement("span");
-  node.className = ["piece", piece.side, piece.type === "king" ? "king" : ""].filter(Boolean).join(" ");
+  node.className = ["piece", visualClassFor(piece), piece.type === "king" ? "king" : ""].filter(Boolean).join(" ");
   node.textContent = piece.label;
+  node.dataset.badge = badgeFor(piece);
   return node;
 }
 
-function playPlayerMove(move) {
-  if (gameOver || phase !== "player") {
+function runPlayerTurn(directionKey) {
+  if (phase !== "player" || gameOver) {
     return;
   }
 
-  const player = getPlayer();
-  const target = pieceAt(move.row, move.col);
-
-  if (target?.type === "king") {
-    movePiece(player, move.row, move.col);
-    removePiece(target.id);
-    finish("勝ち", "敵の王を取りました。");
-    return;
-  }
-
-  if (target?.side === "enemy") {
-    removePiece(target.id);
-  }
-
-  movePiece(player, move.row, move.col);
   phase = "ally";
-  validMoves = [];
-  setMessage("味方の番", "味方の金と銀が自動で動きます。");
-  render();
+  playerHints = [];
+  updateDirectionButtons();
+  setMessage("味方の行動", `${COMMANDS[selectedCommand]}命令を受けて、味方全体が動きます。`);
 
-  window.setTimeout(playAllyTurn, 340);
+  const allyPlans = buildAllyPlans(directionKey);
+  resolvePlans("ally", allyPlans);
+
+  if (checkFinished()) {
+    return;
+  }
+
+  render();
+  window.setTimeout(runEnemyTurn, 420);
 }
 
-function playAllyTurn() {
+function runEnemyTurn() {
   if (gameOver) {
     return;
-  }
-
-  const allies = pieces
-    .filter((piece) => piece.side === "ally")
-    .sort((a, b) => distanceToEnemyKing(a.row, a.col) - distanceToEnemyKing(b.row, b.col));
-
-  for (const ally of allies) {
-    const move = chooseAllyMove(ally);
-
-    if (!move) {
-      continue;
-    }
-
-    const target = pieceAt(move.row, move.col);
-
-    if (target?.type === "king") {
-      movePiece(ally, move.row, move.col);
-      removePiece(target.id);
-      finish("勝ち", `${ally.label}が敵の王を取りました。`);
-      return;
-    }
-
-    if (target?.side === "enemy") {
-      removePiece(target.id);
-    }
-
-    movePiece(ally, move.row, move.col);
   }
 
   phase = "enemy";
-  setMessage("敵の番", "敵が兵を狙っています。");
+  setMessage("敵の行動", "敵軍が自動で動きます。");
   render();
 
-  window.setTimeout(playEnemyTurn, 420);
-}
+  window.setTimeout(() => {
+    resolvePlans("enemy", buildEnemyPlans());
 
-function playEnemyTurn() {
-  if (gameOver) {
-    return;
-  }
-
-  const enemies = pieces
-    .filter((piece) => piece.side === "enemy")
-    .sort((a, b) => distanceToPlayer(a.row, a.col) - distanceToPlayer(b.row, b.col));
-
-  for (const enemy of enemies) {
-    const capture = legalEnemyMoves(enemy).find((move) => move.capturePlayer);
-
-    if (capture) {
-      movePiece(enemy, capture.row, capture.col);
-      removePiece(PLAYER_ID);
-      finish("負け", `${enemy.label}に兵を取られました。`);
+    if (checkFinished()) {
       return;
     }
-  }
 
-  for (const enemy of enemies) {
-    const move = chooseEnemyMove(enemy);
-
-    if (!move) {
-      continue;
-    }
-
-    const target = pieceAt(move.row, move.col);
-
-    if (target?.side === "ally") {
-      removePiece(target.id);
-    }
-
-    movePiece(enemy, move.row, move.col);
-  }
-
-  phase = "player";
-  updateValidMoves();
-  setMessage("あなたの番", validMoves.length ? "黄色い場所へ兵を進めてください。" : "動ける場所がありません。");
-  render();
+    phase = "player";
+    updatePlayerHints();
+    updateDirectionButtons();
+    setMessage("あなたの番", "歩への命令を選び、自分の銀を動かしてください。");
+    render();
+  }, 360);
 }
 
-function chooseAllyMove(ally) {
-  const moves = legalAllyMoves(ally);
+function buildAllyPlans(directionKey) {
+  return pieces
+    .filter((piece) => piece.side === "ally")
+    .map((piece) => {
+      if (piece.control === "player") {
+        return planPlayerMove(piece, directionKey);
+      }
 
-  if (!moves.length) {
-    return null;
-  }
+      if (piece.control === "subordinate") {
+        return planSubordinateMove(piece);
+      }
 
-  return moves.sort((a, b) => scoreAllyMove(b) - scoreAllyMove(a))[0];
-}
-
-function chooseEnemyMove(enemy) {
-  const moves = legalEnemyMoves(enemy).filter((move) => !move.capturePlayer);
-
-  if (!moves.length) {
-    return null;
-  }
-
-  if (enemy.type === "king") {
-    const player = getPlayer();
-    const nearPlayer = Math.abs(enemy.row - player.row) <= 2 && Math.abs(enemy.col - player.col) <= 2;
-
-    if (!nearPlayer) {
-      return null;
-    }
-
-    return moves.sort((a, b) => distanceFromPlayer(b.row, b.col) - distanceFromPlayer(a.row, a.col))[0];
-  }
-
-  return moves.sort((a, b) => {
-    const captureDelta = Number(Boolean(pieceAt(b.row, b.col)?.side === "ally")) -
-      Number(Boolean(pieceAt(a.row, a.col)?.side === "ally"));
-    const distanceDelta = distanceToPlayer(a.row, a.col) - distanceToPlayer(b.row, b.col);
-    return captureDelta || distanceDelta || Math.abs(a.col - 4) - Math.abs(b.col - 4);
-  })[0];
-}
-
-function updateValidMoves() {
-  const player = getPlayer();
-
-  validMoves = playerMoves
-    .map(([rowDelta, colDelta]) => ({ row: player.row + rowDelta, col: player.col + colDelta }))
-    .filter((move) => inBounds(move.row, move.col))
-    .filter((move) => !isPlayerArmy(pieceAt(move.row, move.col)))
-    .map((move) => ({ ...move, capture: pieceAt(move.row, move.col)?.side === "enemy" }));
-}
-
-function legalAllyMoves(ally) {
-  return allyMoves[ally.type]
-    .map(([rowDelta, colDelta]) => ({ row: ally.row + rowDelta, col: ally.col + colDelta }))
-    .filter((move) => inBounds(move.row, move.col))
-    .filter((move) => !isPlayerArmy(pieceAt(move.row, move.col)))
-    .map((move) => ({ ...move, target: pieceAt(move.row, move.col) }));
-}
-
-function legalEnemyMoves(enemy) {
-  return enemyMoves[enemy.type]
-    .map(([rowDelta, colDelta]) => ({ row: enemy.row + rowDelta, col: enemy.col + colDelta }))
-    .filter((move) => inBounds(move.row, move.col))
-    .filter((move) => pieceAt(move.row, move.col)?.side !== "enemy")
-    .map((move) => {
-      const target = pieceAt(move.row, move.col);
-      return {
-        ...move,
-        capturePlayer: target?.id === PLAYER_ID,
-        captureAlly: target?.side === "ally"
-      };
+      return planSuperiorMove(piece);
     });
 }
 
-function scoreAllyMove(move) {
-  const target = move.target;
-  let score = 0;
+function buildEnemyPlans() {
+  return pieces
+    .filter((piece) => piece.side === "enemy")
+    .map((piece) => {
+      if (piece.type === "king") {
+        return planEnemyKingMove(piece);
+      }
 
-  if (target?.type === "king") {
-    score += 1000;
-  } else if (target?.side === "enemy") {
-    score += 80;
+      return bestPlan(piece, legalMovesFor(piece), scoreEnemyMove);
+    });
+}
+
+function planPlayerMove(piece, directionKey) {
+  const direction = DIRECTIONS[directionKey] || DIRECTIONS.stay;
+  const target = { row: piece.row + direction.row, col: piece.col + direction.col };
+
+  if (directionKey === "stay" || !canMoveTo(piece, target.row, target.col)) {
+    return stayPlan(piece);
   }
 
+  return createPlan(piece, target.row, target.col, 50);
+}
+
+function planSubordinateMove(piece) {
+  if (selectedCommand === "hold") {
+    return stayPlan(piece);
+  }
+
+  const scorer = selectedCommand === "evade" ? scoreEvadeMove : scoreAttackMove;
+  return bestPlan(piece, legalMovesFor(piece), scorer);
+}
+
+function planSuperiorMove(piece) {
+  return bestPlan(piece, legalMovesFor(piece), scoreSuperiorMove);
+}
+
+function planEnemyKingMove(piece) {
+  const moves = legalMovesFor(piece);
+  const threatened = distanceToNearestAlly(piece.row, piece.col) <= 2;
+
+  if (!threatened) {
+    return stayPlan(piece);
+  }
+
+  return bestPlan(piece, moves, scoreKingSafety);
+}
+
+function bestPlan(piece, moves, scorer) {
+  if (!moves.length) {
+    return stayPlan(piece);
+  }
+
+  const scored = moves
+    .map((move) => ({ ...move, score: scorer(move, piece) }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+  return createPlan(piece, best.row, best.col, best.score);
+}
+
+function legalMovesFor(piece) {
+  if (piece.type === "rook") {
+    return rookMoves(piece);
+  }
+
+  return STEP_MOVES
+    .map((direction) => ({ row: piece.row + direction.row, col: piece.col + direction.col }))
+    .filter((move) => canMoveTo(piece, move.row, move.col));
+}
+
+function rookMoves(piece) {
+  const moves = [];
+
+  for (const direction of STEP_MOVES) {
+    for (let step = 1; step <= 2; step += 1) {
+      const row = piece.row + direction.row * step;
+      const col = piece.col + direction.col * step;
+
+      if (!inBounds(row, col)) {
+        break;
+      }
+
+      const target = pieceAt(row, col);
+
+      if (target?.side === piece.side) {
+        break;
+      }
+
+      moves.push({ row, col });
+
+      if (target && target.side !== piece.side) {
+        break;
+      }
+    }
+  }
+
+  return moves;
+}
+
+function canMoveTo(piece, row, col) {
+  if (!inBounds(row, col)) {
+    return false;
+  }
+
+  return pieceAt(row, col)?.side !== piece.side;
+}
+
+function createPlan(piece, row, col, score) {
+  return {
+    id: piece.id,
+    piece,
+    fromRow: piece.row,
+    fromCol: piece.col,
+    row,
+    col,
+    score
+  };
+}
+
+function stayPlan(piece) {
+  return createPlan(piece, piece.row, piece.col, -999);
+}
+
+function resolvePlans(side, plans) {
+  const validPlans = plans.map((plan) => blockFriendlyTargets(plan));
+  const chosenPlans = chooseNonConflictingPlans(validPlans);
+
+  for (const plan of chosenPlans) {
+    if (plan.row === plan.fromRow && plan.col === plan.fromCol) {
+      continue;
+    }
+
+    const target = pieceAt(plan.row, plan.col);
+
+    if (target && target.side !== side) {
+      removePiece(target.id);
+    }
+
+    const current = pieces.find((piece) => piece.id === plan.id);
+
+    if (current) {
+      current.row = plan.row;
+      current.col = plan.col;
+    }
+  }
+}
+
+function blockFriendlyTargets(plan) {
+  const target = pieceAt(plan.row, plan.col);
+
+  if (target?.side === plan.piece.side) {
+    return stayPlan(plan.piece);
+  }
+
+  return plan;
+}
+
+function chooseNonConflictingPlans(plans) {
+  const groups = new Map();
+
+  for (const plan of plans) {
+    const key = `${plan.row},${plan.col}`;
+    const group = groups.get(key) || [];
+    group.push(plan);
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].map((group) => {
+    if (group.length === 1) {
+      return group[0];
+    }
+
+    return group.sort((a, b) => b.piece.rank - a.piece.rank || b.score - a.score)[0];
+  });
+}
+
+function scoreAttackMove(move, piece) {
+  const target = pieceAt(move.row, move.col);
+  let score = captureScore(target);
+
   score -= distanceToEnemyKing(move.row, move.col) * 8;
-  score -= distanceToPlayer(move.row, move.col);
+  score -= distanceToNearestEnemy(move.row, move.col) * 2;
+  score += piece.rank;
   return score;
+}
+
+function scoreSuperiorMove(move, piece) {
+  const target = pieceAt(move.row, move.col);
+  let score = captureScore(target) * 1.2;
+
+  score -= distanceToEnemyKing(move.row, move.col) * 10;
+  score += piece.rank * 2;
+  return score;
+}
+
+function scoreEvadeMove(move) {
+  const target = pieceAt(move.row, move.col);
+  let score = target?.side === "enemy" ? 20 : 0;
+
+  score += distanceToNearestEnemy(move.row, move.col) * 14;
+  score += move.row;
+  return score;
+}
+
+function scoreEnemyMove(move) {
+  const target = pieceAt(move.row, move.col);
+  let score = 0;
+
+  if (target?.id === PLAYER_ID) {
+    score += 1000;
+  } else if (target?.side === "ally") {
+    score += 80 + target.rank * 10;
+  }
+
+  score -= distanceToPlayer(move.row, move.col) * 10;
+  return score;
+}
+
+function scoreKingSafety(move) {
+  const target = pieceAt(move.row, move.col);
+  let score = target?.side === "ally" ? 70 : 0;
+
+  score += distanceToNearestAlly(move.row, move.col) * 16;
+  return score;
+}
+
+function captureScore(target) {
+  if (!target || target.side !== "enemy") {
+    return 0;
+  }
+
+  if (target.id === ENEMY_KING_ID) {
+    return 1000;
+  }
+
+  return 80 + target.rank * 10;
+}
+
+function checkFinished() {
+  if (!pieces.some((piece) => piece.id === ENEMY_KING_ID)) {
+    finish("勝ち", "敵の王を取りました。");
+    return true;
+  }
+
+  if (!pieces.some((piece) => piece.id === PLAYER_ID)) {
+    finish("負け", "自分の銀を取られました。");
+    return true;
+  }
+
+  return false;
 }
 
 function finish(result, message) {
   gameOver = true;
-  validMoves = [];
+  phase = "ended";
+  playerHints = [];
   setMessage(result, message);
+  updateDirectionButtons();
   render();
+}
+
+function updatePlayerHints() {
+  const player = getPlayer();
+
+  playerHints = Object.entries(DIRECTIONS)
+    .map(([dir, delta]) => ({
+      dir,
+      row: player.row + delta.row,
+      col: player.col + delta.col
+    }))
+    .filter((move) => move.dir === "stay" || canMoveTo(player, move.row, move.col));
+}
+
+function updateCommandButtons() {
+  const disabled = gameOver || phase !== "player";
+
+  for (const button of commandButtons) {
+    const active = button.dataset.command === selectedCommand;
+    button.setAttribute("aria-pressed", String(active));
+    button.disabled = disabled;
+  }
+}
+
+function updateDirectionButtons() {
+  const disabled = gameOver || phase !== "player";
+  const allowedDirections = new Set(playerHints.map((move) => move.dir));
+
+  for (const button of directionButtons) {
+    button.disabled = disabled || !allowedDirections.has(button.dataset.dir);
+  }
 }
 
 function setMessage(turn, message) {
@@ -313,17 +478,12 @@ function setMessage(turn, message) {
   messageElement.textContent = message;
 }
 
-function movePiece(piece, row, col) {
-  piece.row = row;
-  piece.col = col;
+function pieceAt(row, col) {
+  return pieces.find((piece) => piece.row === row && piece.col === col);
 }
 
 function removePiece(id) {
   pieces = pieces.filter((piece) => piece.id !== id);
-}
-
-function pieceAt(row, col) {
-  return pieces.find((piece) => piece.row === row && piece.col === col);
 }
 
 function getPlayer() {
@@ -331,57 +491,93 @@ function getPlayer() {
 }
 
 function getEnemyKing() {
-  return pieces.find((piece) => piece.side === "enemy" && piece.type === "king");
+  return pieces.find((piece) => piece.id === ENEMY_KING_ID);
 }
 
 function distanceToPlayer(row, col) {
   const player = getPlayer();
-  return Math.abs(row - player.row) + Math.abs(col - player.col);
-}
-
-function distanceFromPlayer(row, col) {
-  return distanceToPlayer(row, col);
+  return player ? manhattan(row, col, player.row, player.col) : 0;
 }
 
 function distanceToEnemyKing(row, col) {
   const king = getEnemyKing();
-  return king ? Math.abs(row - king.row) + Math.abs(col - king.col) : 0;
+  return king ? manhattan(row, col, king.row, king.col) : 0;
 }
 
-function isPlayerArmy(piece) {
-  return piece?.side === "player" || piece?.side === "ally";
+function distanceToNearestEnemy(row, col) {
+  return nearestDistance(row, col, pieces.filter((piece) => piece.side === "enemy"));
+}
+
+function distanceToNearestAlly(row, col) {
+  return nearestDistance(row, col, pieces.filter((piece) => piece.side === "ally"));
+}
+
+function nearestDistance(row, col, candidates) {
+  if (!candidates.length) {
+    return 0;
+  }
+
+  return Math.min(...candidates.map((piece) => manhattan(row, col, piece.row, piece.col)));
+}
+
+function manhattan(rowA, colA, rowB, colB) {
+  return Math.abs(rowA - rowB) + Math.abs(colA - colB);
 }
 
 function inBounds(row, col) {
   return row >= 0 && row < SIZE && col >= 0 && col < SIZE;
 }
 
-function labelForCell(row, col, piece, move) {
+function labelForCell(row, col, piece, hint) {
   const position = `${row + 1}段 ${col + 1}列`;
 
   if (piece) {
-    return `${position} ${labelForSide(piece.side)}の${piece.label}`;
+    return `${position} ${labelForControl(piece)}の${piece.label}`;
   }
 
-  if (move?.capture) {
-    return `${position} 敵を取れる場所`;
-  }
-
-  if (move) {
-    return `${position} 移動できる場所`;
+  if (hint) {
+    return `${position} 銀の移動候補`;
   }
 
   return `${position} 空きマス`;
 }
 
-function labelForSide(side) {
-  if (side === "player") {
+function visualClassFor(piece) {
+  if (piece.side === "enemy") {
+    return "enemy";
+  }
+
+  return piece.control;
+}
+
+function badgeFor(piece) {
+  if (piece.control === "player") {
+    return "YOU";
+  }
+
+  if (piece.control === "subordinate") {
+    return "CMD";
+  }
+
+  if (piece.control === "superior") {
+    return "AUTO";
+  }
+
+  return "ENEMY";
+}
+
+function labelForControl(piece) {
+  if (piece.side === "enemy") {
+    return "敵";
+  }
+
+  if (piece.control === "player") {
     return "自分";
   }
 
-  if (side === "ally") {
-    return "味方";
+  if (piece.control === "subordinate") {
+    return "命令下の味方";
   }
 
-  return "敵";
+  return "自動で動く味方";
 }

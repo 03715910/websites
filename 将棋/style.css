@@ -1,18 +1,18 @@
 :root {
   --bg: #15110d;
   --panel: #fff3d0;
-  --panel-dark: #4a2f1a;
   --ink: #24160c;
-  --muted: #7a5d3f;
+  --muted: #76593b;
   --line: rgba(56, 34, 15, 0.34);
   --board: #d9a652;
   --board-alt: #c98f3f;
   --player: #fff2a8;
-  --ally: #d8f0d2;
+  --subordinate: #d8f0d2;
+  --superior: #c8e2ff;
   --enemy: #f0d6ad;
   --move: #f6c84f;
   --danger: #b7412c;
-  --safe: #1d7a54;
+  --active: #1d7a54;
 }
 
 * {
@@ -35,9 +35,9 @@ button {
 }
 
 .game-shell {
-  width: min(1180px, 100%);
+  width: min(1220px, 100%);
   margin: 0 auto;
-  padding: clamp(16px, 3vw, 34px);
+  padding: clamp(14px, 3vw, 32px);
 }
 
 .hud {
@@ -48,11 +48,12 @@ button {
   margin-bottom: 18px;
 }
 
-.eyebrow {
+.eyebrow,
+.panel-label {
   margin: 0 0 6px;
   color: #f7c863;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -65,7 +66,7 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(2.2rem, 7vw, 5.4rem);
+  font-size: clamp(2.2rem, 7vw, 5.2rem);
   line-height: 0.95;
   letter-spacing: 0;
 }
@@ -78,7 +79,9 @@ h1 {
 
 .score-card,
 .turn-box,
-.rule-box {
+.rule-box,
+.rank-box,
+.command-panel {
   border: 1px solid rgba(255, 243, 208, 0.2);
   border-radius: 8px;
   background: rgba(255, 243, 208, 0.94);
@@ -103,7 +106,7 @@ h1 {
 
 .score-card strong,
 .turn-box strong {
-  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-size: clamp(1rem, 2vw, 1.28rem);
   line-height: 1.2;
 }
 
@@ -113,9 +116,15 @@ h1 {
 
 .play-area {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   align-items: start;
   gap: 18px;
+}
+
+.board-column {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
 }
 
 .board-wrap {
@@ -129,7 +138,7 @@ h1 {
 }
 
 .board {
-  width: min(92vw, 72vh, 720px);
+  width: min(92vw, 66vh, 700px);
   aspect-ratio: 1;
   display: grid;
   grid-template-columns: repeat(9, 1fr);
@@ -166,35 +175,25 @@ h1 {
     linear-gradient(145deg, var(--board), var(--board-alt));
 }
 
-.cell.valid {
-  cursor: pointer;
-}
-
 .cell.valid::after {
   content: "";
   position: absolute;
-  inset: 28%;
+  inset: 31%;
   border-radius: 50%;
-  background: rgba(246, 200, 79, 0.9);
+  background: rgba(246, 200, 79, 0.88);
   box-shadow: 0 0 0 6px rgba(67, 41, 13, 0.16);
-}
-
-.cell.valid.capture::after {
-  inset: 18%;
-  border: 3px solid rgba(183, 65, 44, 0.95);
-  background: rgba(255, 238, 173, 0.36);
 }
 
 .piece {
   position: relative;
   z-index: 1;
-  width: min(72%, 58px);
-  height: min(78%, 64px);
+  width: min(74%, 58px);
+  height: min(80%, 64px);
   display: grid;
   place-items: center;
   clip-path: polygon(50% 0%, 92% 20%, 84% 100%, 16% 100%, 8% 20%);
   color: var(--ink);
-  font-size: clamp(1.15rem, 4.5vw, 2.2rem);
+  font-size: clamp(1.08rem, 4.2vw, 2.1rem);
   font-weight: 900;
   line-height: 1;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
@@ -204,8 +203,12 @@ h1 {
   background: var(--player);
 }
 
-.piece.ally {
-  background: var(--ally);
+.piece.subordinate {
+  background: var(--subordinate);
+}
+
+.piece.superior {
+  background: var(--superior);
 }
 
 .piece.enemy {
@@ -217,20 +220,71 @@ h1 {
   border: 3px solid var(--danger);
 }
 
-.piece.player::after {
-  content: "YOU";
-  position: absolute;
-  bottom: 7px;
-  font-size: 0.5rem;
-  letter-spacing: 0;
-}
-
-.piece.ally::after {
-  content: "AUTO";
+.piece::after {
+  content: attr(data-badge);
   position: absolute;
   bottom: 7px;
   font-size: 0.46rem;
   letter-spacing: 0;
+}
+
+.command-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 16px;
+  padding: 16px;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.segmented button,
+.dpad button,
+#restartButton {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #f6c84f;
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--active);
+  color: #fff9e8;
+}
+
+.dpad {
+  display: grid;
+  grid-template-areas:
+    ". up ."
+    "left stay right"
+    ". down .";
+  gap: 8px;
+}
+
+.dpad .up {
+  grid-area: up;
+}
+
+.dpad .left {
+  grid-area: left;
+}
+
+.dpad .stay {
+  grid-area: stay;
+}
+
+.dpad .right {
+  grid-area: right;
+}
+
+.dpad .down {
+  grid-area: down;
 }
 
 .side-panel {
@@ -241,7 +295,7 @@ h1 {
 .turn-box {
   display: grid;
   gap: 8px;
-  min-height: 112px;
+  min-height: 116px;
   padding: 18px;
 }
 
@@ -250,11 +304,13 @@ h1 {
   min-height: 2.6em;
 }
 
-.rule-box {
+.rule-box,
+.rank-box {
   padding: 18px;
 }
 
-.rule-box h2 {
+.rule-box h2,
+.rank-box h2 {
   margin-bottom: 10px;
   font-size: 1.2rem;
 }
@@ -269,25 +325,33 @@ h1 {
   margin-bottom: 0;
 }
 
+.rank-box ol {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 #restartButton {
-  min-height: 48px;
-  border: 0;
-  border-radius: 8px;
   background: #f6c84f;
-  color: #24160c;
-  font-weight: 900;
-  cursor: pointer;
 }
 
 #restartButton:focus-visible,
-.cell.valid:focus-visible {
+.segmented button:focus-visible,
+.dpad button:focus-visible {
   outline: 3px solid rgba(246, 200, 79, 0.42);
   outline-offset: 3px;
 }
 
-@media (max-width: 860px) {
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 900px) {
   .hud,
-  .play-area {
+  .play-area,
+  .command-panel {
     grid-template-columns: 1fr;
   }
 
@@ -298,7 +362,8 @@ h1 {
 }
 
 @media (max-width: 520px) {
-  .score-row {
+  .score-row,
+  .segmented {
     grid-template-columns: 1fr;
   }
 
@@ -307,6 +372,6 @@ h1 {
   }
 
   .piece {
-    font-size: clamp(1rem, 6vw, 1.7rem);
+    font-size: clamp(0.9rem, 6vw, 1.55rem);
   }
 }

@@ -2,6 +2,7 @@
 
 const SIZE = 9;
 const PLAYER_ID = "player-silver";
+const ALLY_KING_ID = "ally-king";
 const ENEMY_KING_ID = "enemy-king";
 const boardElement = document.getElementById("board");
 const messageElement = document.getElementById("message");
@@ -59,6 +60,7 @@ startGame();
 function startGame() {
   pieces = [
     { id: "ally-rook", side: "ally", control: "superior", type: "rook", label: "飛", rank: 5, row: 8, col: 1 },
+    { id: ALLY_KING_ID, side: "ally", control: "superior", type: "king", label: "王", rank: 6, row: 8, col: 4 },
     { id: "ally-gold", side: "ally", control: "superior", type: "gold", label: "金", rank: 4, row: 8, col: 7 },
     { id: PLAYER_ID, side: "ally", control: "player", type: "silver", label: "銀", rank: 3, row: 7, col: 4 },
     { id: "ally-pawn-left", side: "ally", control: "subordinate", type: "pawn", label: "歩", rank: 1, row: 8, col: 3 },
@@ -169,15 +171,19 @@ function buildAllyPlans(directionKey) {
   return pieces
     .filter((piece) => piece.side === "ally")
     .map((piece) => {
-      if (piece.control === "player") {
-        return planPlayerMove(piece, directionKey);
-      }
+    if (piece.control === "player") {
+      return planPlayerMove(piece, directionKey);
+    }
 
       if (piece.control === "subordinate") {
         return planSubordinateMove(piece);
       }
 
-      return planSuperiorMove(piece);
+    if (piece.id === ALLY_KING_ID) {
+      return planOwnKingMove(piece);
+    }
+
+    return planSuperiorMove(piece);
     });
 }
 
@@ -215,6 +221,16 @@ function planSubordinateMove(piece) {
 
 function planSuperiorMove(piece) {
   return bestPlan(piece, legalMovesFor(piece), scoreSuperiorMove);
+}
+
+function planOwnKingMove(piece) {
+  const threatened = distanceToNearestEnemy(piece.row, piece.col) <= 2;
+
+  if (!threatened) {
+    return stayPlan(piece);
+  }
+
+  return bestPlan(piece, legalMovesFor(piece), scoreOwnKingSafety);
 }
 
 function planEnemyKingMove(piece) {
@@ -389,13 +405,22 @@ function scoreEnemyMove(move) {
   const target = pieceAt(move.row, move.col);
   let score = 0;
 
-  if (target?.id === PLAYER_ID) {
+  if (target?.id === PLAYER_ID || target?.id === ALLY_KING_ID) {
     score += 1000;
   } else if (target?.side === "ally") {
     score += 80 + target.rank * 10;
   }
 
   score -= distanceToPlayer(move.row, move.col) * 10;
+  return score;
+}
+
+function scoreOwnKingSafety(move) {
+  const target = pieceAt(move.row, move.col);
+  let score = target?.side === "enemy" ? 40 : 0;
+
+  score += distanceToNearestEnemy(move.row, move.col) * 18;
+  score += move.row;
   return score;
 }
 
@@ -427,6 +452,11 @@ function checkFinished() {
 
   if (!pieces.some((piece) => piece.id === PLAYER_ID)) {
     finish("負け", "自分の銀を取られました。");
+    return true;
+  }
+
+  if (!pieces.some((piece) => piece.id === ALLY_KING_ID)) {
+    finish("負け", "自分の王を取られました。");
     return true;
   }
 

@@ -364,6 +364,53 @@ button:disabled {
   opacity: 0.58;
 }
 
+.victory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 36px);
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.victory-overlay[hidden] {
+  display: none;
+}
+
+.victory-stage {
+  position: relative;
+  width: min(100%, 980px);
+}
+
+.victory-stage video {
+  display: block;
+  width: 100%;
+  max-height: 88vh;
+  border-radius: 8px;
+  background: #000;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.victory-play {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  min-width: 148px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #f6c84f;
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.victory-play[hidden] {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .hud,
   .play-area,

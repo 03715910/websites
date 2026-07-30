@@ -8,6 +8,9 @@ const boardElement = document.getElementById("board");
 const messageElement = document.getElementById("message");
 const turnLabelElement = document.getElementById("turnLabel");
 const restartButton = document.getElementById("restartButton");
+const victoryOverlay = document.getElementById("victoryOverlay");
+const victoryVideo = document.getElementById("victoryVideo");
+const playVictoryButton = document.getElementById("playVictoryButton");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
 
@@ -80,10 +83,22 @@ for (const button of directionButtons) {
   button.addEventListener("click", () => runPlayerTurn(button.dataset.dir));
 }
 
+victoryVideo.addEventListener("ended", () => {
+  hideVictoryVideo();
+  startGame();
+});
+
+victoryVideo.addEventListener("error", () => {
+  hideVictoryVideo();
+  startGame();
+});
+
+playVictoryButton.addEventListener("click", playVictoryVideo);
 restartButton.addEventListener("click", startGame);
 startGame();
 
 function startGame() {
+  hideVictoryVideo();
   pieces = createInitialPieces();
   phase = "player";
   selectedCommand = "attack";
@@ -584,7 +599,7 @@ function captureScore(target) {
 
 function checkFinished() {
   if (!pieces.some((piece) => piece.id === ENEMY_KING_ID)) {
-    finish("勝ち", "敵の王を取りました。");
+    finish("勝ち", "敵の王を取りました。", { playVictoryVideo: true });
     return true;
   }
 
@@ -601,13 +616,41 @@ function checkFinished() {
   return false;
 }
 
-function finish(result, message) {
+function finish(result, message, options = {}) {
   gameOver = true;
   phase = "ended";
   playerHints = [];
   setMessage(result, message);
   updateDirectionButtons();
   render();
+
+  if (options.playVictoryVideo) {
+    showVictoryVideo();
+  }
+}
+
+function showVictoryVideo() {
+  victoryOverlay.hidden = false;
+  victoryVideo.currentTime = 0;
+  playVictoryButton.hidden = true;
+  playVictoryVideo();
+}
+
+function hideVictoryVideo() {
+  victoryVideo.pause();
+  victoryVideo.currentTime = 0;
+  victoryOverlay.hidden = true;
+  playVictoryButton.hidden = true;
+}
+
+function playVictoryVideo() {
+  const playResult = victoryVideo.play();
+
+  if (playResult?.catch) {
+    playResult.catch(() => {
+      playVictoryButton.hidden = false;
+    });
+  }
 }
 
 function updatePlayerHints() {

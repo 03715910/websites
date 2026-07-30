@@ -72,7 +72,17 @@ const PIECE_DATA = {
   pawn: { label: "歩", rank: 1 }
 };
 
+const PROMOTED_DATA = {
+  rook: { label: "龍", rank: 8 },
+  bishop: { label: "馬", rank: 8 },
+  silver: { label: "全", rank: 5 },
+  knight: { label: "圭", rank: 5 },
+  lance: { label: "杏", rank: 5 },
+  pawn: { label: "と", rank: 5 }
+};
+
 const SUBORDINATE_TYPES = new Set(["pawn", "lance", "knight"]);
+const PROMOTABLE_TYPES = new Set(Object.keys(PROMOTED_DATA));
 
 let pieces = [];
 let phase = "player";
@@ -136,7 +146,7 @@ function startGame() {
   gameOver = false;
   completedRounds = 0;
   updatePlayerHints();
-  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ銀を動かしてください。");
+  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ自分の駒を動かしてください。");
   updateCommandButtons();
   updateDirectionButtons();
   render();
@@ -248,11 +258,17 @@ function render() {
 
 function createPiece(piece) {
   const node = document.createElement("span");
-  node.className = ["piece", visualClassFor(piece), piece.type === "king" ? "king" : ""].filter(Boolean).join(" ");
+  node.className = [
+    "piece",
+    visualClassFor(piece),
+    piece.type === "king" ? "king" : "",
+    piece.promoted ? "promoted" : ""
+  ].filter(Boolean).join(" ");
   node.textContent = piece.label;
   node.dataset.pieceId = piece.id;
   node.dataset.side = piece.side;
   node.dataset.badge = badgeFor(piece);
+  node.dataset.promoted = piece.promoted ? "成" : "";
   return node;
 }
 
@@ -322,7 +338,7 @@ async function runEnemyTurn(token = actionToken) {
   updatePlayerHints();
   updateCommandButtons();
   updateDirectionButtons();
-  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ銀を動かしてください。");
+  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ自分の駒を動かしてください。");
   render();
 }
 
@@ -420,6 +436,10 @@ function bestPlan(piece, moves, scorer) {
 function legalMovesFor(piece) {
   const forward = forwardFor(piece);
 
+  if (piece.promoted) {
+    return promotedMovesFor(piece, forward);
+  }
+
   if (piece.type === "rook") {
     return slidingMoves(piece, ORTHOGONAL_MOVES);
   }
@@ -450,14 +470,7 @@ function legalMovesFor(piece) {
   }
 
   if (piece.type === "gold") {
-    return stepMoves(piece, [
-      { row: forward, col: -1 },
-      { row: forward, col: 0 },
-      { row: forward, col: 1 },
-      { row: 0, col: -1 },
-      { row: 0, col: 1 },
-      { row: -forward, col: 0 }
-    ]);
+    return goldMoves(piece, forward);
   }
 
   if (piece.type === "pawn") {
@@ -469,6 +482,35 @@ function legalMovesFor(piece) {
   }
 
   return stepMoves(piece, ORTHOGONAL_MOVES);
+}
+
+function promotedMovesFor(piece, forward) {
+  if (piece.type === "rook") {
+    return uniqueMoves([
+      ...slidingMoves(piece, ORTHOGONAL_MOVES),
+      ...stepMoves(piece, DIAGONAL_MOVES)
+    ]);
+  }
+
+  if (piece.type === "bishop") {
+    return uniqueMoves([
+      ...slidingMoves(piece, DIAGONAL_MOVES),
+      ...stepMoves(piece, ORTHOGONAL_MOVES)
+    ]);
+  }
+
+  return goldMoves(piece, forward);
+}
+
+function goldMoves(piece, forward = forwardFor(piece)) {
+  return stepMoves(piece, [
+    { row: forward, col: -1 },
+    { row: forward, col: 0 },
+    { row: forward, col: 1 },
+    { row: 0, col: -1 },
+    { row: 0, col: 1 },
+    { row: -forward, col: 0 }
+  ]);
 }
 
 function stepMoves(piece, directions) {
@@ -504,6 +546,21 @@ function slidingMoves(piece, directions) {
   }
 
   return moves;
+}
+
+function uniqueMoves(moves) {
+  const seen = new Set();
+
+  return moves.filter((move) => {
+    const key = `${move.row},${move.col}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }
 
 function forwardFor(piece) {
@@ -574,8 +631,32 @@ function applyResolvedPlans(side, chosenPlans) {
     if (current) {
       current.row = plan.row;
       current.col = plan.col;
+      promoteAfterMove(current, plan);
     }
   }
+}
+
+function promoteAfterMove(piece, plan) {
+  if (!canPromoteAfterMove(piece, plan)) {
+    return;
+  }
+
+  const promotedData = PROMOTED_DATA[piece.type];
+  piece.promoted = true;
+  piece.label = promotedData.label;
+  piece.rank = promotedData.rank;
+}
+
+function canPromoteAfterMove(piece, plan) {
+  return Boolean(
+    PROMOTABLE_TYPES.has(piece.type) &&
+      !piece.promoted &&
+      (inPromotionZone(piece.side, plan.fromRow) || inPromotionZone(piece.side, plan.row))
+  );
+}
+
+function inPromotionZone(side, row) {
+  return side === "ally" ? row <= 2 : row >= 6;
 }
 
 async function animatePlans(side, chosenPlans) {
@@ -955,7 +1036,7 @@ function labelForCell(row, col, piece, hint) {
   }
 
   if (hint) {
-    return `${position} 銀の移動候補`;
+    return `${position} 自分の駒の移動候補`;
   }
 
   return `${position} 空きマス`;

@@ -331,7 +331,7 @@ h1 {
 
 .command-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
 }
@@ -343,7 +343,6 @@ h1 {
 }
 
 .segmented button,
-.dpad button,
 #restartButton {
   min-height: 46px;
   border: 0;
@@ -357,51 +356,6 @@ h1 {
 .segmented button[aria-pressed="true"] {
   background: var(--active);
   color: #fff9e8;
-}
-
-.dpad {
-  display: grid;
-  grid-template-areas:
-    "up-left up up-right"
-    "left stay right"
-    "down-left down down-right";
-  gap: 8px;
-}
-
-.dpad .up-left {
-  grid-area: up-left;
-}
-
-.dpad .up {
-  grid-area: up;
-}
-
-.dpad .up-right {
-  grid-area: up-right;
-}
-
-.dpad .left {
-  grid-area: left;
-}
-
-.dpad .stay {
-  grid-area: stay;
-}
-
-.dpad .right {
-  grid-area: right;
-}
-
-.dpad .down-left {
-  grid-area: down-left;
-}
-
-.dpad .down {
-  grid-area: down;
-}
-
-.dpad .down-right {
-  grid-area: down-right;
 }
 
 .side-panel {
@@ -454,8 +408,7 @@ h1 {
 }
 
 #restartButton:focus-visible,
-.segmented button:focus-visible,
-.dpad button:focus-visible {
+.segmented button:focus-visible {
   outline: 3px solid rgba(246, 200, 79, 0.42);
   outline-offset: 3px;
 }

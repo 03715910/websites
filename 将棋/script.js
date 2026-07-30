@@ -78,7 +78,7 @@ for (const button of commandButtons) {
 
     selectedCommand = button.dataset.command;
     updateCommandButtons();
-    setMessage("あなたの番", `${COMMANDS[selectedCommand]}を下位の駒に命令しました。銀の移動方向を選んでください。`);
+    setMessage("あなたの番", `${COMMANDS[selectedCommand]}を下位の駒に命令しました。光っているマスを選んでください。`);
   });
 }
 
@@ -108,7 +108,7 @@ function startGame() {
   selectedCommand = "attack";
   gameOver = false;
   updatePlayerHints();
-  setMessage("あなたの番", "下位の駒への命令を選び、自分の銀を動かしてください。");
+  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ銀を動かしてください。");
   updateCommandButtons();
   updateDirectionButtons();
   render();
@@ -288,7 +288,7 @@ async function runEnemyTurn(token = actionToken) {
   updatePlayerHints();
   updateCommandButtons();
   updateDirectionButtons();
-  setMessage("あなたの番", "下位の駒への命令を選び、自分の銀を動かしてください。");
+  setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ銀を動かしてください。");
   render();
 }
 

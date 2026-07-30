@@ -24,6 +24,10 @@ const resultSymbol = document.getElementById("resultSymbol");
 const rulesButton = document.getElementById("rulesButton");
 const rulesOverlay = document.getElementById("rulesOverlay");
 const rulesCloseButton = document.getElementById("rulesCloseButton");
+const promotionOverlay = document.getElementById("promotionOverlay");
+const promotionPieceLabel = document.getElementById("promotionPieceLabel");
+const promoteButton = document.getElementById("promoteButton");
+const declinePromotionButton = document.getElementById("declinePromotionButton");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
 
@@ -92,6 +96,7 @@ let playerHints = [];
 let actionToken = 0;
 let completedRounds = 0;
 let resultTimer = 0;
+let pendingPromotionChoice = null;
 
 for (const button of commandButtons) {
   button.addEventListener("click", () => {
@@ -123,12 +128,19 @@ playVictoryButton.addEventListener("click", playVictoryVideo);
 restartButton.addEventListener("click", startGame);
 rulesButton.addEventListener("click", showRules);
 rulesCloseButton.addEventListener("click", hideRules);
+promoteButton.addEventListener("click", () => resolvePromotionChoice(true));
+declinePromotionButton.addEventListener("click", () => resolvePromotionChoice(false));
 rulesOverlay.addEventListener("click", (event) => {
   if (event.target === rulesOverlay) {
     hideRules();
   }
 });
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !promotionOverlay.hidden) {
+    resolvePromotionChoice(false);
+    return;
+  }
+
   if (event.key === "Escape" && !rulesOverlay.hidden) {
     hideRules();
   }
@@ -139,6 +151,7 @@ function startGame() {
   actionToken += 1;
   hideVictoryVideo();
   hideResultOverlay();
+  cancelPromotionChoice();
   hideRules();
   pieces = createInitialPieces();
   phase = "player";
@@ -605,7 +618,12 @@ async function resolvePlansWithAnimation(side, plans, shouldApply = () => true) 
     return null;
   }
 
-  applyResolvedPlans(side, chosenPlans);
+  await applyResolvedPlansWithChoices(side, chosenPlans, shouldApply);
+
+  if (!shouldApply()) {
+    return null;
+  }
+
   return chosenPlans;
 }
 
@@ -615,12 +633,45 @@ function prepareResolvedPlans(plans) {
 }
 
 function applyResolvedPlans(side, chosenPlans) {
+  const movedPlans = applyMovesWithoutPromotion(side, chosenPlans);
+
+  for (const { piece, plan, capturedKing } of movedPlans) {
+    if (!capturedKing) {
+      promoteAfterMove(piece, plan);
+    }
+  }
+}
+
+async function applyResolvedPlansWithChoices(side, chosenPlans, shouldApply = () => true) {
+  const movedPlans = applyMovesWithoutPromotion(side, chosenPlans);
+
+  if (!shouldApply()) {
+    return;
+  }
+
+  for (const { piece, plan, capturedKing } of movedPlans) {
+    if (capturedKing) {
+      continue;
+    }
+
+    await handlePromotionAfterMove(piece, plan, shouldApply);
+
+    if (!shouldApply()) {
+      return;
+    }
+  }
+}
+
+function applyMovesWithoutPromotion(side, chosenPlans) {
+  const movedPlans = [];
+
   for (const plan of chosenPlans) {
     if (plan.row === plan.fromRow && plan.col === plan.fromCol) {
       continue;
     }
 
     const target = pieceAt(plan.row, plan.col);
+    const capturedKing = target?.type === "king";
 
     if (target && target.side !== side) {
       removePiece(target.id);
@@ -631,16 +682,58 @@ function applyResolvedPlans(side, chosenPlans) {
     if (current) {
       current.row = plan.row;
       current.col = plan.col;
-      promoteAfterMove(current, plan);
+      movedPlans.push({ piece: current, plan, capturedKing });
     }
   }
+
+  return movedPlans;
 }
 
 function promoteAfterMove(piece, plan) {
-  if (!canPromoteAfterMove(piece, plan)) {
+  if (promotionDecisionFor(piece, plan) === "none") {
     return;
   }
 
+  promotePiece(piece);
+}
+
+async function handlePromotionAfterMove(piece, plan, shouldApply) {
+  const decision = promotionDecisionFor(piece, plan);
+
+  if (decision === "none") {
+    return;
+  }
+
+  if (decision !== "choice") {
+    promotePiece(piece);
+    return;
+  }
+
+  render();
+  const shouldPromote = await askPromotionChoice(piece);
+
+  if (!shouldApply()) {
+    return;
+  }
+
+  if (shouldPromote) {
+    promotePiece(piece);
+  }
+}
+
+function promotionDecisionFor(piece, plan) {
+  if (!canPromoteAfterMove(piece, plan)) {
+    return "none";
+  }
+
+  if (mustPromote(piece, plan.row)) {
+    return "forced";
+  }
+
+  return piece.control === "player" ? "choice" : "auto";
+}
+
+function promotePiece(piece) {
   const promotedData = PROMOTED_DATA[piece.type];
   piece.promoted = true;
   piece.label = promotedData.label;
@@ -653,6 +746,18 @@ function canPromoteAfterMove(piece, plan) {
       !piece.promoted &&
       (inPromotionZone(piece.side, plan.fromRow) || inPromotionZone(piece.side, plan.row))
   );
+}
+
+function mustPromote(piece, row) {
+  if (piece.type === "pawn" || piece.type === "lance") {
+    return piece.side === "ally" ? row === 0 : row === SIZE - 1;
+  }
+
+  if (piece.type === "knight") {
+    return piece.side === "ally" ? row <= 1 : row >= SIZE - 2;
+  }
+
+  return false;
 }
 
 function inPromotionZone(side, row) {
@@ -928,6 +1033,42 @@ function hideResultOverlay() {
   window.clearTimeout(resultTimer);
   resultTimer = 0;
   resultOverlay.hidden = true;
+}
+
+function askPromotionChoice(piece) {
+  const promotedData = PROMOTED_DATA[piece.type];
+  promotionPieceLabel.textContent = `${piece.label}を${promotedData.label}に成りますか？`;
+  promotionOverlay.hidden = false;
+  promoteButton.focus?.();
+
+  return new Promise((resolve) => {
+    pendingPromotionChoice = resolve;
+  });
+}
+
+function resolvePromotionChoice(shouldPromote) {
+  if (!pendingPromotionChoice) {
+    hidePromotionOverlay();
+    return;
+  }
+
+  const resolve = pendingPromotionChoice;
+  pendingPromotionChoice = null;
+  hidePromotionOverlay();
+  resolve(shouldPromote);
+}
+
+function cancelPromotionChoice() {
+  if (pendingPromotionChoice) {
+    resolvePromotionChoice(false);
+    return;
+  }
+
+  hidePromotionOverlay();
+}
+
+function hidePromotionOverlay() {
+  promotionOverlay.hidden = true;
 }
 
 function showRules() {

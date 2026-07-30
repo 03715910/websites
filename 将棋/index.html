@@ -43,6 +43,54 @@
                 <button type="button" data-command="hold">待機</button>
               </div>
             </div>
+
+            <div class="promotion-policy" aria-label="駒の種類ごとの成り方針">
+              <p class="panel-label">成り方針</p>
+              <div class="policy-grid">
+                <div class="policy-row">
+                  <span class="policy-piece">歩</span>
+                  <div class="policy-toggle" role="group" aria-label="歩の成り方針">
+                    <button type="button" data-promotion-type="pawn" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="pawn" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+                <div class="policy-row">
+                  <span class="policy-piece">香</span>
+                  <div class="policy-toggle" role="group" aria-label="香の成り方針">
+                    <button type="button" data-promotion-type="lance" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="lance" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+                <div class="policy-row">
+                  <span class="policy-piece">桂</span>
+                  <div class="policy-toggle" role="group" aria-label="桂の成り方針">
+                    <button type="button" data-promotion-type="knight" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="knight" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+                <div class="policy-row">
+                  <span class="policy-piece">銀</span>
+                  <div class="policy-toggle" role="group" aria-label="銀の成り方針">
+                    <button type="button" data-promotion-type="silver" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="silver" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+                <div class="policy-row">
+                  <span class="policy-piece">角</span>
+                  <div class="policy-toggle" role="group" aria-label="角の成り方針">
+                    <button type="button" data-promotion-type="bishop" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="bishop" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+                <div class="policy-row">
+                  <span class="policy-piece">飛</span>
+                  <div class="policy-toggle" role="group" aria-label="飛の成り方針">
+                    <button type="button" data-promotion-type="rook" data-promotion-choice="promote">成る</button>
+                    <button type="button" data-promotion-type="rook" data-promotion-choice="decline">成らない</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -73,18 +121,6 @@
       </div>
     </div>
 
-    <div id="promotionOverlay" class="promotion-overlay" hidden>
-      <section class="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotionTitle">
-        <p class="eyebrow">Promotion</p>
-        <h2 id="promotionTitle">成りますか？</h2>
-        <p id="promotionPieceLabel">この駒を成りますか？</p>
-        <div class="promotion-actions" role="group" aria-label="成りの選択">
-          <button id="promoteButton" type="button">成る</button>
-          <button id="declinePromotionButton" type="button">成らない</button>
-        </div>
-      </section>
-    </div>
-
     <div id="rulesOverlay" class="rules-overlay" hidden>
       <section class="rules-dialog" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
         <header class="rules-header">
@@ -102,7 +138,7 @@
             <p>あなたは中間階級の銀です。自分より下の歩・香・桂には大枠の命令を出せます。</p>
             <p>自分より上、または同格の味方は勝手に動きます。味方でも進路を邪魔することがあります。</p>
             <p>自分の銀、下位の駒、上位の駒が同時に動いた後、敵が自動で動きます。</p>
-            <p>歩・香・桂・銀・角・飛は敵陣3段目以内で成れます。自分の銀と命令下の駒は、成れる瞬間に選択できます。歩・香の最奥、桂の奥2段は強制的に成ります。</p>
+            <p>歩・香・桂・銀・角・飛は敵陣3段目以内で成れます。味方の成れる駒は、成り方針で駒の種類ごとに選びます。歩・香の最奥、桂の奥2段は強制的に成ります。</p>
             <p>成った歩・香・桂・銀は金と同じ動きになります。成った角は馬、成った飛は龍として動きます。</p>
             <p>80ターンで決着がつかない場合は引き分けです。</p>
           </section>

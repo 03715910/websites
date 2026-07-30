@@ -399,7 +399,44 @@ h1 {
   gap: 8px;
 }
 
+.promotion-policy {
+  display: grid;
+  gap: 10px;
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.policy-row {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.policy-piece {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  border: 1px solid rgba(56, 34, 15, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.34);
+  font-weight: 950;
+}
+
+.policy-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  min-width: 0;
+}
+
 .segmented button,
+.policy-toggle button,
 #restartButton {
   min-height: 46px;
   border: 0;
@@ -411,6 +448,18 @@ h1 {
 }
 
 .segmented button[aria-pressed="true"] {
+  background: var(--active);
+  color: #fff9e8;
+}
+
+.policy-toggle button {
+  min-height: 42px;
+  padding: 0 8px;
+  background: rgba(36, 22, 12, 0.12);
+  font-size: 0.88rem;
+}
+
+.policy-toggle button[aria-pressed="true"] {
   background: var(--active);
   color: #fff9e8;
 }
@@ -438,9 +487,9 @@ h1 {
 
 #restartButton:focus-visible,
 .segmented button:focus-visible,
+.policy-toggle button:focus-visible,
 .rules-button:focus-visible,
-.rules-close:focus-visible,
-.promotion-actions button:focus-visible {
+.rules-close:focus-visible {
   outline: 3px solid rgba(246, 200, 79, 0.42);
   outline-offset: 3px;
 }
@@ -666,71 +715,6 @@ button:disabled {
   }
 }
 
-.promotion-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 13;
-  display: grid;
-  place-items: center;
-  padding: clamp(16px, 5vw, 40px);
-  background: rgba(0, 0, 0, 0.58);
-}
-
-.promotion-overlay[hidden] {
-  display: none;
-}
-
-.promotion-dialog {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 14px;
-  padding: clamp(20px, 6vw, 32px);
-  border: 1px solid rgba(255, 243, 208, 0.34);
-  border-radius: 8px;
-  background: rgba(255, 243, 208, 0.98);
-  color: var(--ink);
-  text-align: center;
-  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.5);
-  animation: rulesEnter 180ms ease-out both;
-}
-
-.promotion-dialog h2,
-.promotion-dialog p {
-  margin: 0;
-}
-
-.promotion-dialog h2 {
-  font-size: clamp(1.65rem, 7vw, 2.6rem);
-  line-height: 1.05;
-}
-
-#promotionPieceLabel {
-  color: var(--muted);
-  font-weight: 850;
-  line-height: 1.45;
-}
-
-.promotion-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.promotion-actions button {
-  min-height: 48px;
-  border: 0;
-  border-radius: 8px;
-  background: #f6c84f;
-  color: var(--ink);
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.promotion-actions button:last-child {
-  background: rgba(36, 22, 12, 0.12);
-}
-
 .rules-overlay {
   position: fixed;
   inset: 0;
@@ -852,7 +836,7 @@ button:disabled {
 @media (max-width: 520px) {
   .score-row,
   .segmented,
-  .promotion-actions {
+  .policy-grid {
     grid-template-columns: 1fr;
   }
 

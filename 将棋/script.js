@@ -24,12 +24,9 @@ const resultSymbol = document.getElementById("resultSymbol");
 const rulesButton = document.getElementById("rulesButton");
 const rulesOverlay = document.getElementById("rulesOverlay");
 const rulesCloseButton = document.getElementById("rulesCloseButton");
-const promotionOverlay = document.getElementById("promotionOverlay");
-const promotionPieceLabel = document.getElementById("promotionPieceLabel");
-const promoteButton = document.getElementById("promoteButton");
-const declinePromotionButton = document.getElementById("declinePromotionButton");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
+const promotionPolicyButtons = [...document.querySelectorAll("[data-promotion-type]")];
 
 const DIRECTIONS = {
   upLeft: { row: -1, col: -1, label: "左上" },
@@ -87,16 +84,24 @@ const PROMOTED_DATA = {
 
 const SUBORDINATE_TYPES = new Set(["pawn", "lance", "knight"]);
 const PROMOTABLE_TYPES = new Set(Object.keys(PROMOTED_DATA));
+const ALLY_PROMOTION_POLICY_TYPES = new Set(Object.keys(PROMOTED_DATA));
 
 let pieces = [];
 let phase = "player";
 let selectedCommand = "attack";
+let promotionPolicies = {
+  pawn: true,
+  lance: true,
+  knight: true,
+  silver: true,
+  bishop: true,
+  rook: true
+};
 let gameOver = false;
 let playerHints = [];
 let actionToken = 0;
 let completedRounds = 0;
 let resultTimer = 0;
-let pendingPromotionChoice = null;
 
 for (const button of commandButtons) {
   button.addEventListener("click", () => {
@@ -114,6 +119,19 @@ for (const button of directionButtons) {
   button.addEventListener("click", () => runPlayerTurn(button.dataset.dir));
 }
 
+for (const button of promotionPolicyButtons) {
+  button.addEventListener("click", () => {
+    const type = button.dataset.promotionType;
+
+    if (!ALLY_PROMOTION_POLICY_TYPES.has(type)) {
+      return;
+    }
+
+    promotionPolicies[type] = button.dataset.promotionChoice === "promote";
+    updatePromotionPolicyButtons();
+  });
+}
+
 victoryVideo.addEventListener("ended", () => {
   hideVictoryVideo();
   startGame();
@@ -128,19 +146,12 @@ playVictoryButton.addEventListener("click", playVictoryVideo);
 restartButton.addEventListener("click", startGame);
 rulesButton.addEventListener("click", showRules);
 rulesCloseButton.addEventListener("click", hideRules);
-promoteButton.addEventListener("click", () => resolvePromotionChoice(true));
-declinePromotionButton.addEventListener("click", () => resolvePromotionChoice(false));
 rulesOverlay.addEventListener("click", (event) => {
   if (event.target === rulesOverlay) {
     hideRules();
   }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !promotionOverlay.hidden) {
-    resolvePromotionChoice(false);
-    return;
-  }
-
   if (event.key === "Escape" && !rulesOverlay.hidden) {
     hideRules();
   }
@@ -151,7 +162,6 @@ function startGame() {
   actionToken += 1;
   hideVictoryVideo();
   hideResultOverlay();
-  cancelPromotionChoice();
   hideRules();
   pieces = createInitialPieces();
   phase = "player";
@@ -162,6 +172,7 @@ function startGame() {
   setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ自分の駒を動かしてください。");
   updateCommandButtons();
   updateDirectionButtons();
+  updatePromotionPolicyButtons();
   render();
 }
 
@@ -714,21 +725,11 @@ async function handlePromotionAfterMove(piece, plan, shouldApply) {
     return;
   }
 
-  if (decision !== "choice") {
-    promotePiece(piece);
-    return;
-  }
-
-  render();
-  const shouldPromote = await askPromotionChoice(piece);
-
   if (!shouldApply()) {
     return;
   }
 
-  if (shouldPromote) {
-    promotePiece(piece);
-  }
+  promotePiece(piece);
 }
 
 function promotionDecisionFor(piece, plan) {
@@ -740,11 +741,15 @@ function promotionDecisionFor(piece, plan) {
     return "forced";
   }
 
-  return canChoosePromotion(piece) ? "choice" : "auto";
+  if (usesPromotionPolicy(piece)) {
+    return promotionPolicies[piece.type] ? "auto" : "none";
+  }
+
+  return "auto";
 }
 
-function canChoosePromotion(piece) {
-  return piece.side === "ally" && (piece.control === "player" || piece.control === "subordinate");
+function usesPromotionPolicy(piece) {
+  return piece.side === "ally" && ALLY_PROMOTION_POLICY_TYPES.has(piece.type);
 }
 
 function promotePiece(piece) {
@@ -1099,42 +1104,6 @@ function hideResultOverlay() {
   resultOverlay.hidden = true;
 }
 
-function askPromotionChoice(piece) {
-  const promotedData = PROMOTED_DATA[piece.type];
-  promotionPieceLabel.textContent = `${labelForControl(piece)}の${piece.label}を${promotedData.label}に成りますか？`;
-  promotionOverlay.hidden = false;
-  promoteButton.focus?.();
-
-  return new Promise((resolve) => {
-    pendingPromotionChoice = resolve;
-  });
-}
-
-function resolvePromotionChoice(shouldPromote) {
-  if (!pendingPromotionChoice) {
-    hidePromotionOverlay();
-    return;
-  }
-
-  const resolve = pendingPromotionChoice;
-  pendingPromotionChoice = null;
-  hidePromotionOverlay();
-  resolve(shouldPromote);
-}
-
-function cancelPromotionChoice() {
-  if (pendingPromotionChoice) {
-    resolvePromotionChoice(false);
-    return;
-  }
-
-  hidePromotionOverlay();
-}
-
-function hidePromotionOverlay() {
-  promotionOverlay.hidden = true;
-}
-
 function showRules() {
   rulesOverlay.hidden = false;
   rulesButton.setAttribute("aria-expanded", "true");
@@ -1175,6 +1144,15 @@ function updateDirectionButtons() {
 
   for (const button of directionButtons) {
     button.disabled = disabled || !allowedDirections.has(button.dataset.dir);
+  }
+}
+
+function updatePromotionPolicyButtons() {
+  for (const button of promotionPolicyButtons) {
+    const type = button.dataset.promotionType;
+    const wantsPromotion = promotionPolicies[type] !== false;
+    const active = button.dataset.promotionChoice === (wantsPromotion ? "promote" : "decline");
+    button.setAttribute("aria-pressed", String(active));
   }
 }
 

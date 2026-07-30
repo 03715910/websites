@@ -6,6 +6,8 @@ const ALLY_KING_ID = "ally-king";
 const ENEMY_KING_ID = "enemy-king";
 const MOVE_ANIMATION_MS = 560;
 const TURN_PAUSE_MS = 180;
+const DRAW_ROUND_LIMIT = 80;
+const RESULT_RESTART_MS = 3400;
 const boardElement = document.getElementById("board");
 const messageElement = document.getElementById("message");
 const turnLabelElement = document.getElementById("turnLabel");
@@ -13,6 +15,12 @@ const restartButton = document.getElementById("restartButton");
 const victoryOverlay = document.getElementById("victoryOverlay");
 const victoryVideo = document.getElementById("victoryVideo");
 const playVictoryButton = document.getElementById("playVictoryButton");
+const resultOverlay = document.getElementById("resultOverlay");
+const resultCard = document.getElementById("resultCard");
+const resultEyebrow = document.getElementById("resultEyebrow");
+const resultTitle = document.getElementById("resultTitle");
+const resultText = document.getElementById("resultText");
+const resultSymbol = document.getElementById("resultSymbol");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
 
@@ -69,6 +77,8 @@ let selectedCommand = "attack";
 let gameOver = false;
 let playerHints = [];
 let actionToken = 0;
+let completedRounds = 0;
+let resultTimer = 0;
 
 for (const button of commandButtons) {
   button.addEventListener("click", () => {
@@ -103,10 +113,12 @@ startGame();
 function startGame() {
   actionToken += 1;
   hideVictoryVideo();
+  hideResultOverlay();
   pieces = createInitialPieces();
   phase = "player";
   selectedCommand = "attack";
   gameOver = false;
+  completedRounds = 0;
   updatePlayerHints();
   setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ銀を動かしてください。");
   updateCommandButtons();
@@ -281,6 +293,12 @@ async function runEnemyTurn(token = actionToken) {
   }
 
   if (checkFinished()) {
+    return;
+  }
+
+  completedRounds += 1;
+
+  if (checkDraw()) {
     return;
   }
 
@@ -731,16 +749,25 @@ function checkFinished() {
   }
 
   if (!pieces.some((piece) => piece.id === PLAYER_ID)) {
-    finish("負け", "自分の銀を取られました。");
+    finish("負け", "自分の銀を取られました。", { resultType: "loss" });
     return true;
   }
 
   if (!pieces.some((piece) => piece.id === ALLY_KING_ID)) {
-    finish("負け", "自分の王を取られました。");
+    finish("負け", "自分の王を取られました。", { resultType: "loss" });
     return true;
   }
 
   return false;
+}
+
+function checkDraw() {
+  if (completedRounds < DRAW_ROUND_LIMIT) {
+    return false;
+  }
+
+  finish("引き分け", "80ターンで決着がつきませんでした。", { resultType: "draw" });
+  return true;
 }
 
 function finish(result, message, options = {}) {
@@ -754,6 +781,10 @@ function finish(result, message, options = {}) {
 
   if (options.playVictoryVideo) {
     showVictoryVideo();
+  }
+
+  if (options.resultType) {
+    showResultOverlay(options.resultType, result, message);
   }
 }
 
@@ -779,6 +810,27 @@ function playVictoryVideo() {
       playVictoryButton.hidden = false;
     });
   }
+}
+
+function showResultOverlay(type, title, message) {
+  window.clearTimeout(resultTimer);
+  resultOverlay.hidden = false;
+  resultOverlay.dataset.result = type;
+  resultCard.className = `result-card ${type}`;
+  resultEyebrow.textContent = type === "draw" ? "Draw" : "Defeat";
+  resultTitle.textContent = title;
+  resultText.textContent = message;
+  resultSymbol.textContent = type === "draw" ? "引" : "負";
+
+  resultTimer = window.setTimeout(() => {
+    startGame();
+  }, RESULT_RESTART_MS);
+}
+
+function hideResultOverlay() {
+  window.clearTimeout(resultTimer);
+  resultTimer = 0;
+  resultOverlay.hidden = true;
 }
 
 function updatePlayerHints() {

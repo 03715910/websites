@@ -465,6 +465,175 @@ button:disabled {
   display: none;
 }
 
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 5vw, 44px);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 243, 208, 0.12), transparent 18rem),
+    rgba(0, 0, 0, 0.88);
+}
+
+.result-overlay[hidden] {
+  display: none;
+}
+
+.result-overlay[data-result="loss"] {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(183, 65, 44, 0.36), transparent 18rem),
+    linear-gradient(145deg, rgba(35, 7, 5, 0.94), rgba(0, 0, 0, 0.9));
+}
+
+.result-overlay[data-result="draw"] {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(96, 165, 250, 0.28), transparent 18rem),
+    linear-gradient(145deg, rgba(9, 21, 38, 0.94), rgba(0, 0, 0, 0.9));
+}
+
+.result-card {
+  width: min(100%, 520px);
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: clamp(24px, 7vw, 54px);
+  border: 1px solid rgba(255, 243, 208, 0.26);
+  border-radius: 8px;
+  background: rgba(255, 243, 208, 0.95);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+  animation: resultEnter 520ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+}
+
+.result-card.loss {
+  animation:
+    resultEnter 520ms cubic-bezier(0.2, 0.78, 0.22, 1) both,
+    resultTremor 540ms ease-in-out 520ms 2;
+}
+
+.result-card.draw {
+  background: rgba(235, 244, 255, 0.96);
+}
+
+.result-symbol {
+  position: relative;
+  width: clamp(86px, 24vw, 132px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff9e8;
+  font-size: clamp(3.2rem, 15vw, 5.4rem);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.result-card.loss .result-symbol {
+  background: #b7412c;
+  box-shadow:
+    0 0 0 10px rgba(183, 65, 44, 0.14),
+    0 18px 42px rgba(183, 65, 44, 0.38);
+}
+
+.result-card.draw .result-symbol {
+  background: #2563eb;
+  box-shadow:
+    0 0 0 10px rgba(37, 99, 235, 0.14),
+    0 18px 42px rgba(37, 99, 235, 0.32);
+}
+
+.result-card.loss .result-symbol::before,
+.result-card.loss .result-symbol::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 68%;
+  border-radius: 999px;
+  background: rgba(255, 249, 232, 0.8);
+  transform: rotate(34deg);
+}
+
+.result-card.loss .result-symbol::after {
+  height: 46%;
+  transform: translate(19px, 16px) rotate(-28deg);
+}
+
+.result-card.draw .result-symbol::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border: 5px solid rgba(37, 99, 235, 0.26);
+  border-top-color: rgba(255, 249, 232, 0.9);
+  border-radius: 50%;
+  animation: drawOrbit 1100ms linear infinite;
+}
+
+.result-eyebrow {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.result-card strong {
+  display: block;
+  font-size: clamp(2.3rem, 12vw, 5.4rem);
+  line-height: 0.95;
+}
+
+.result-card span {
+  display: block;
+  max-width: 24rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 4vw, 1.28rem);
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+@keyframes resultEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.94);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes resultTremor {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-8px);
+  }
+
+  50% {
+    transform: translateX(6px);
+  }
+
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes drawOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 900px) {
   .hud,
   .play-area,

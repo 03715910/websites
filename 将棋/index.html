@@ -55,6 +55,7 @@
             <p>あなたは中間階級の銀です。自分より下の歩・香・桂には大枠の命令を出せます。</p>
             <p>自分より上、または同格の味方は勝手に動きます。味方でも進路を邪魔することがあります。</p>
             <p>自分の銀、下位の駒、上位の駒が同時に動いた後、敵が自動で動きます。</p>
+            <p>80ターンで決着がつかない場合は引き分けです。</p>
           </div>
 
           <div class="rank-box">
@@ -76,6 +77,15 @@
       <div class="victory-stage" role="dialog" aria-modal="true" aria-label="勝利動画">
         <video id="victoryVideo" src="ソマソ.mp4" preload="auto" playsinline></video>
         <button id="playVictoryButton" type="button" class="victory-play" hidden>動画を再生</button>
+      </div>
+    </div>
+
+    <div id="resultOverlay" class="result-overlay" hidden>
+      <div id="resultCard" class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <div id="resultSymbol" class="result-symbol" aria-hidden="true">負</div>
+        <p id="resultEyebrow" class="result-eyebrow">Result</p>
+        <strong id="resultTitle">敗北</strong>
+        <span id="resultText">自分の駒を取られました。</span>
       </div>
     </div>
 

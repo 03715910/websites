@@ -724,7 +724,9 @@ function applyMovesWithoutPromotion(side, chosenPlans) {
 }
 
 function promoteAfterMove(piece, plan) {
-  if (promotionDecisionFor(piece, plan) === "none") {
+  const decision = promotionDecisionFor(piece, plan);
+
+  if (decision !== "forced" && decision !== "auto") {
     return;
   }
 

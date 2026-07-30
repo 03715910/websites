@@ -4,6 +4,8 @@ const SIZE = 9;
 const PLAYER_ID = "player-silver";
 const ALLY_KING_ID = "ally-king";
 const ENEMY_KING_ID = "enemy-king";
+const MOVE_ANIMATION_MS = 560;
+const TURN_PAUSE_MS = 180;
 const boardElement = document.getElementById("board");
 const messageElement = document.getElementById("message");
 const turnLabelElement = document.getElementById("turnLabel");
@@ -66,6 +68,7 @@ let phase = "player";
 let selectedCommand = "attack";
 let gameOver = false;
 let playerHints = [];
+let actionToken = 0;
 
 for (const button of commandButtons) {
   button.addEventListener("click", () => {
@@ -98,6 +101,7 @@ restartButton.addEventListener("click", startGame);
 startGame();
 
 function startGame() {
+  actionToken += 1;
   hideVictoryVideo();
   pieces = createInitialPieces();
   phase = "player";
@@ -196,6 +200,8 @@ function render() {
         hint ? "valid" : ""
       ].filter(Boolean).join(" ");
       cell.type = "button";
+      cell.dataset.row = String(row);
+      cell.dataset.col = String(col);
       cell.disabled = !hint || phase !== "player" || gameOver;
       cell.setAttribute("aria-label", labelForCell(row, col, piece, hint));
 
@@ -216,53 +222,74 @@ function createPiece(piece) {
   const node = document.createElement("span");
   node.className = ["piece", visualClassFor(piece), piece.type === "king" ? "king" : ""].filter(Boolean).join(" ");
   node.textContent = piece.label;
+  node.dataset.pieceId = piece.id;
+  node.dataset.side = piece.side;
   node.dataset.badge = badgeFor(piece);
   return node;
 }
 
-function runPlayerTurn(directionKey) {
+async function runPlayerTurn(directionKey) {
   if (phase !== "player" || gameOver) {
     return;
   }
 
+  const token = actionToken + 1;
+  actionToken = token;
   phase = "ally";
   playerHints = [];
+  updateCommandButtons();
   updateDirectionButtons();
   setMessage("味方の行動", `${COMMANDS[selectedCommand]}命令を受けて、味方全体が動きます。`);
+  render();
 
   const allyPlans = buildAllyPlans(directionKey);
-  resolvePlans("ally", allyPlans);
+  const appliedPlans = await resolvePlansWithAnimation("ally", allyPlans, () => token === actionToken);
+
+  if (!appliedPlans || token !== actionToken) {
+    return;
+  }
 
   if (checkFinished()) {
     return;
   }
 
   render();
-  window.setTimeout(runEnemyTurn, 420);
+  window.setTimeout(() => runEnemyTurn(token), TURN_PAUSE_MS);
 }
 
-function runEnemyTurn() {
-  if (gameOver) {
+async function runEnemyTurn(token = actionToken) {
+  if (gameOver || token !== actionToken) {
     return;
   }
 
   phase = "enemy";
+  updateCommandButtons();
+  updateDirectionButtons();
   setMessage("敵の行動", "敵軍が自動で動きます。");
   render();
 
-  window.setTimeout(() => {
-    resolvePlans("enemy", buildEnemyPlans());
+  await wait(TURN_PAUSE_MS);
 
-    if (checkFinished()) {
-      return;
-    }
+  if (gameOver || token !== actionToken) {
+    return;
+  }
 
-    phase = "player";
-    updatePlayerHints();
-    updateDirectionButtons();
-    setMessage("あなたの番", "下位の駒への命令を選び、自分の銀を動かしてください。");
-    render();
-  }, 360);
+  const appliedPlans = await resolvePlansWithAnimation("enemy", buildEnemyPlans(), () => token === actionToken);
+
+  if (!appliedPlans || token !== actionToken) {
+    return;
+  }
+
+  if (checkFinished()) {
+    return;
+  }
+
+  phase = "player";
+  updatePlayerHints();
+  updateCommandButtons();
+  updateDirectionButtons();
+  setMessage("あなたの番", "下位の駒への命令を選び、自分の銀を動かしてください。");
+  render();
 }
 
 function buildAllyPlans(directionKey) {
@@ -474,9 +501,29 @@ function stayPlan(piece) {
 }
 
 function resolvePlans(side, plans) {
-  const validPlans = plans.map((plan) => blockFriendlyTargets(plan));
-  const chosenPlans = chooseNonConflictingPlans(validPlans);
+  const chosenPlans = prepareResolvedPlans(plans);
+  applyResolvedPlans(side, chosenPlans);
+  return chosenPlans;
+}
 
+async function resolvePlansWithAnimation(side, plans, shouldApply = () => true) {
+  const chosenPlans = prepareResolvedPlans(plans);
+  await animatePlans(side, chosenPlans);
+
+  if (!shouldApply()) {
+    return null;
+  }
+
+  applyResolvedPlans(side, chosenPlans);
+  return chosenPlans;
+}
+
+function prepareResolvedPlans(plans) {
+  const validPlans = plans.map((plan) => blockFriendlyTargets(plan));
+  return chooseNonConflictingPlans(validPlans);
+}
+
+function applyResolvedPlans(side, chosenPlans) {
   for (const plan of chosenPlans) {
     if (plan.row === plan.fromRow && plan.col === plan.fromCol) {
       continue;
@@ -495,6 +542,86 @@ function resolvePlans(side, plans) {
       current.col = plan.col;
     }
   }
+}
+
+async function animatePlans(side, chosenPlans) {
+  const animations = chosenPlans
+    .filter((plan) => plan.row !== plan.fromRow || plan.col !== plan.fromCol)
+    .map((plan) => animationDataForPlan(side, plan))
+    .filter(Boolean);
+
+  if (!animations.length) {
+    return;
+  }
+
+  await nextFrame();
+
+  for (const animation of animations) {
+    const { movingPiece, targetPiece, sourceCell, targetCell, dx, dy } = animation;
+    movingPiece.classList.add("is-moving");
+    sourceCell.classList.add("move-from");
+    targetCell.classList.add("move-to");
+    movingPiece.style.setProperty("--move-x", `${dx}px`);
+    movingPiece.style.setProperty("--move-y", `${dy}px`);
+
+    if (targetPiece) {
+      movingPiece.classList.add("is-capturing");
+      targetPiece.classList.add("is-captured");
+      targetCell.classList.add("capture-cell");
+      targetCell.classList.add(targetPiece.dataset.side === "enemy" ? "ally-capture" : "enemy-capture");
+    }
+  }
+
+  await wait(MOVE_ANIMATION_MS);
+}
+
+function animationDataForPlan(side, plan) {
+  const sourceCell = cellAt(plan.fromRow, plan.fromCol);
+  const targetCell = cellAt(plan.row, plan.col);
+  const movingPiece = sourceCell?.querySelector?.(".piece");
+  const target = pieceAt(plan.row, plan.col);
+  const isCapture = target && target.side !== side;
+  const targetPiece = isCapture ? targetCell?.querySelector?.(".piece") : null;
+
+  if (!canAnimate(sourceCell) || !canAnimate(targetCell) || !canAnimate(movingPiece)) {
+    return null;
+  }
+
+  const fromRect = sourceCell.getBoundingClientRect();
+  const toRect = targetCell.getBoundingClientRect();
+
+  return {
+    movingPiece,
+    targetPiece,
+    sourceCell,
+    targetCell,
+    dx: toRect.left - fromRect.left,
+    dy: toRect.top - fromRect.top
+  };
+}
+
+function canAnimate(element) {
+  return Boolean(
+    element &&
+      element.classList &&
+      element.style &&
+      typeof element.getBoundingClientRect === "function"
+  );
+}
+
+function cellAt(row, col) {
+  return boardElement.children[row * SIZE + col];
+}
+
+function wait(duration) {
+  return new Promise((resolve) => window.setTimeout(resolve, duration));
+}
+
+function nextFrame() {
+  return new Promise((resolve) => {
+    const requestFrame = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 16));
+    requestFrame(() => resolve());
+  });
 }
 
 function blockFriendlyTargets(plan) {
@@ -621,6 +748,7 @@ function finish(result, message, options = {}) {
   phase = "ended";
   playerHints = [];
   setMessage(result, message);
+  updateCommandButtons();
   updateDirectionButtons();
   render();
 

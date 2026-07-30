@@ -179,12 +179,48 @@ h1 {
   content: "";
   position: absolute;
   inset: 31%;
+  z-index: 0;
   border-radius: 50%;
   background: rgba(246, 200, 79, 0.88);
   box-shadow: 0 0 0 6px rgba(67, 41, 13, 0.16);
 }
 
+.cell.move-from {
+  z-index: 4;
+  box-shadow: inset 0 0 0 3px rgba(255, 243, 208, 0.45);
+}
+
+.cell.move-to {
+  z-index: 3;
+  box-shadow: inset 0 0 0 3px rgba(246, 200, 79, 0.48);
+}
+
+.cell.capture-cell::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  z-index: 3;
+  border: 4px solid rgba(246, 200, 79, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: captureFlash 560ms ease-out forwards;
+}
+
+.cell.ally-capture::before {
+  border-color: rgba(29, 122, 84, 0.95);
+  box-shadow: 0 0 24px rgba(29, 122, 84, 0.5);
+}
+
+.cell.enemy-capture::before {
+  border-color: rgba(183, 65, 44, 0.95);
+  box-shadow: 0 0 24px rgba(183, 65, 44, 0.5);
+}
+
 .piece {
+  --move-x: 0px;
+  --move-y: 0px;
+  --piece-rotation: 0deg;
+  --piece-scale: 1;
   position: relative;
   z-index: 1;
   width: min(74%, 58px);
@@ -197,6 +233,14 @@ h1 {
   font-weight: 900;
   line-height: 1;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  transform: translate(var(--move-x), var(--move-y)) rotate(var(--piece-rotation)) scale(var(--piece-scale));
+  transform-origin: center;
+  transition:
+    transform 560ms cubic-bezier(0.2, 0.78, 0.22, 1),
+    opacity 360ms ease,
+    filter 360ms ease,
+    box-shadow 360ms ease;
+  will-change: transform, opacity;
 }
 
 .piece.player {
@@ -213,7 +257,7 @@ h1 {
 
 .piece.enemy {
   background: var(--enemy);
-  transform: rotate(180deg);
+  --piece-rotation: 180deg;
 }
 
 .piece.king {
@@ -226,6 +270,63 @@ h1 {
   bottom: 7px;
   font-size: 0.46rem;
   letter-spacing: 0;
+}
+
+.piece.is-moving {
+  z-index: 5;
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.32);
+}
+
+.piece.is-capturing {
+  --piece-scale: 1.08;
+  filter: brightness(1.16) saturate(1.2);
+}
+
+.piece.is-captured {
+  --piece-scale: 0.58;
+  z-index: 2;
+  opacity: 0;
+  filter: blur(1px) saturate(0.7);
+  animation: capturedShake 560ms ease-out forwards;
+}
+
+@keyframes capturedShake {
+  0% {
+    translate: 0 0;
+  }
+
+  22% {
+    translate: -5px 0;
+  }
+
+  44% {
+    translate: 5px 0;
+  }
+
+  66% {
+    translate: -3px 0;
+  }
+
+  100% {
+    translate: 0 0;
+  }
+}
+
+@keyframes captureFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  30% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
 }
 
 .command-panel {

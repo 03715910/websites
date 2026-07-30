@@ -405,7 +405,7 @@ function planSubordinateMove(piece) {
   }
 
   const scorer = selectedCommand === "evade" ? scoreEvadeMove : scoreAttackMove;
-  return bestPlan(piece, legalMovesFor(piece), scorer);
+  return bestPlan(piece, commandMovesFor(piece, selectedCommand), scorer);
 }
 
 function planSuperiorMove(piece) {
@@ -444,6 +444,16 @@ function bestPlan(piece, moves, scorer) {
 
   const best = scored[0];
   return createPlan(piece, best.row, best.col, best.score);
+}
+
+function commandMovesFor(piece, command) {
+  const legalMoves = legalMovesFor(piece);
+
+  if (command === "evade") {
+    return uniqueMoves([{ row: piece.row, col: piece.col }, ...legalMoves]);
+  }
+
+  return legalMoves;
 }
 
 function legalMovesFor(piece) {
@@ -730,7 +740,11 @@ function promotionDecisionFor(piece, plan) {
     return "forced";
   }
 
-  return piece.control === "player" ? "choice" : "auto";
+  return canChoosePromotion(piece) ? "choice" : "auto";
+}
+
+function canChoosePromotion(piece) {
+  return piece.side === "ally" && (piece.control === "player" || piece.control === "subordinate");
 }
 
 function promotePiece(piece) {
@@ -875,10 +889,18 @@ function chooseNonConflictingPlans(plans) {
 
 function scoreAttackMove(move, piece) {
   const target = pieceAt(move.row, move.col);
-  let score = captureScore(target);
+  const startDistance = distanceToEnemyKing(piece.row, piece.col);
+  const endDistance = distanceToEnemyKing(move.row, move.col);
+  let score = captureScore(target) * 3;
 
-  score -= distanceToEnemyKing(move.row, move.col) * 8;
-  score -= distanceToNearestEnemy(move.row, move.col) * 2;
+  score += (startDistance - endDistance) * 35;
+  score += forwardProgress(piece, move) * 18;
+  score += promotionPressure(piece, move);
+
+  if (isSquareAttackedBy("enemy", move.row, move.col)) {
+    score -= 24;
+  }
+
   score += piece.rank;
   return score;
 }
@@ -892,12 +914,28 @@ function scoreSuperiorMove(move, piece) {
   return score;
 }
 
-function scoreEvadeMove(move) {
+function scoreEvadeMove(move, piece) {
   const target = pieceAt(move.row, move.col);
-  let score = target?.side === "enemy" ? 20 : 0;
+  const isStaying = move.row === piece.row && move.col === piece.col;
+  let score = distanceToNearestEnemy(move.row, move.col) * 40;
 
-  score += distanceToNearestEnemy(move.row, move.col) * 14;
-  score += move.row;
+  score += ownCampSafety(piece, move) * 9;
+  score -= forwardProgress(piece, move) * 24;
+
+  if (isStaying) {
+    score += 18;
+  }
+
+  if (isSquareAttackedBy("enemy", move.row, move.col)) {
+    score -= 170;
+  }
+
+  if (target?.id === ENEMY_KING_ID) {
+    score += 2000;
+  } else if (target?.side === "enemy") {
+    score -= 90 + target.rank * 12;
+  }
+
   return score;
 }
 
@@ -942,6 +980,32 @@ function captureScore(target) {
   }
 
   return 80 + target.rank * 10;
+}
+
+function forwardProgress(piece, move) {
+  return (move.row - piece.row) * forwardFor(piece);
+}
+
+function ownCampSafety(piece, move) {
+  return piece.side === "ally" ? move.row : SIZE - 1 - move.row;
+}
+
+function promotionPressure(piece, move) {
+  if (!PROMOTABLE_TYPES.has(piece.type) || piece.promoted) {
+    return 0;
+  }
+
+  if (inPromotionZone(piece.side, move.row)) {
+    return 28;
+  }
+
+  return 0;
+}
+
+function isSquareAttackedBy(side, row, col) {
+  return pieces
+    .filter((piece) => piece.side === side)
+    .some((piece) => legalMovesFor(piece).some((move) => move.row === row && move.col === col));
 }
 
 function checkFinished() {
@@ -1037,7 +1101,7 @@ function hideResultOverlay() {
 
 function askPromotionChoice(piece) {
   const promotedData = PROMOTED_DATA[piece.type];
-  promotionPieceLabel.textContent = `${piece.label}を${promotedData.label}に成りますか？`;
+  promotionPieceLabel.textContent = `${labelForControl(piece)}の${piece.label}を${promotedData.label}に成りますか？`;
   promotionOverlay.hidden = false;
   promoteButton.focus?.();
 

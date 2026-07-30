@@ -399,44 +399,7 @@ h1 {
   gap: 8px;
 }
 
-.promotion-policy {
-  display: grid;
-  gap: 10px;
-}
-
-.policy-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.policy-row {
-  display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.policy-piece {
-  display: grid;
-  place-items: center;
-  min-height: 42px;
-  border: 1px solid rgba(56, 34, 15, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.34);
-  font-weight: 950;
-}
-
-.policy-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  min-width: 0;
-}
-
 .segmented button,
-.policy-toggle button,
 #restartButton {
   min-height: 46px;
   border: 0;
@@ -448,18 +411,6 @@ h1 {
 }
 
 .segmented button[aria-pressed="true"] {
-  background: var(--active);
-  color: #fff9e8;
-}
-
-.policy-toggle button {
-  min-height: 42px;
-  padding: 0 8px;
-  background: rgba(36, 22, 12, 0.12);
-  font-size: 0.88rem;
-}
-
-.policy-toggle button[aria-pressed="true"] {
   background: var(--active);
   color: #fff9e8;
 }
@@ -487,7 +438,8 @@ h1 {
 
 #restartButton:focus-visible,
 .segmented button:focus-visible,
-.policy-toggle button:focus-visible,
+.promotion-choice-toggle button:focus-visible,
+.promotion-confirm:focus-visible,
 .rules-button:focus-visible,
 .rules-close:focus-visible {
   outline: 3px solid rgba(246, 200, 79, 0.42);
@@ -715,6 +667,93 @@ button:disabled {
   }
 }
 
+.promotion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 5vw, 40px);
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.promotion-overlay[hidden] {
+  display: none;
+}
+
+.promotion-dialog {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 14px;
+  padding: clamp(20px, 5vw, 30px);
+  border: 1px solid rgba(255, 243, 208, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 243, 208, 0.98);
+  color: var(--ink);
+  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.5);
+  animation: rulesEnter 180ms ease-out both;
+}
+
+.promotion-dialog h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 7vw, 2.55rem);
+  line-height: 1.05;
+}
+
+.promotion-group-list {
+  display: grid;
+  gap: 10px;
+}
+
+.promotion-choice-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 1.4fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.promotion-choice-summary {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.promotion-choice-summary strong {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.promotion-choice-summary span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.promotion-choice-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 0;
+}
+
+.promotion-choice-toggle button,
+.promotion-confirm {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(36, 22, 12, 0.12);
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.promotion-choice-toggle button[aria-pressed="true"],
+.promotion-confirm {
+  background: var(--active);
+  color: #fff9e8;
+}
+
 .rules-overlay {
   position: fixed;
   inset: 0;
@@ -836,7 +875,7 @@ button:disabled {
 @media (max-width: 520px) {
   .score-row,
   .segmented,
-  .policy-grid {
+  .promotion-choice-row {
     grid-template-columns: 1fr;
   }
 

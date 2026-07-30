@@ -24,9 +24,11 @@ const resultSymbol = document.getElementById("resultSymbol");
 const rulesButton = document.getElementById("rulesButton");
 const rulesOverlay = document.getElementById("rulesOverlay");
 const rulesCloseButton = document.getElementById("rulesCloseButton");
+const promotionOverlay = document.getElementById("promotionOverlay");
+const promotionGroupList = document.getElementById("promotionGroupList");
+const promotionConfirmButton = document.getElementById("promotionConfirmButton");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
-const promotionPolicyButtons = [...document.querySelectorAll("[data-promotion-type]")];
 
 const DIRECTIONS = {
   upLeft: { row: -1, col: -1, label: "左上" },
@@ -83,25 +85,18 @@ const PROMOTED_DATA = {
 };
 
 const SUBORDINATE_TYPES = new Set(["pawn", "lance", "knight"]);
+const PROMOTION_TYPE_ORDER = ["pawn", "lance", "knight", "silver", "bishop", "rook"];
 const PROMOTABLE_TYPES = new Set(Object.keys(PROMOTED_DATA));
-const ALLY_PROMOTION_POLICY_TYPES = new Set(Object.keys(PROMOTED_DATA));
 
 let pieces = [];
 let phase = "player";
 let selectedCommand = "attack";
-let promotionPolicies = {
-  pawn: true,
-  lance: true,
-  knight: true,
-  silver: true,
-  bishop: true,
-  rook: true
-};
 let gameOver = false;
 let playerHints = [];
 let actionToken = 0;
 let completedRounds = 0;
 let resultTimer = 0;
+let pendingPromotionBatch = null;
 
 for (const button of commandButtons) {
   button.addEventListener("click", () => {
@@ -119,19 +114,6 @@ for (const button of directionButtons) {
   button.addEventListener("click", () => runPlayerTurn(button.dataset.dir));
 }
 
-for (const button of promotionPolicyButtons) {
-  button.addEventListener("click", () => {
-    const type = button.dataset.promotionType;
-
-    if (!ALLY_PROMOTION_POLICY_TYPES.has(type)) {
-      return;
-    }
-
-    promotionPolicies[type] = button.dataset.promotionChoice === "promote";
-    updatePromotionPolicyButtons();
-  });
-}
-
 victoryVideo.addEventListener("ended", () => {
   hideVictoryVideo();
   startGame();
@@ -146,12 +128,19 @@ playVictoryButton.addEventListener("click", playVictoryVideo);
 restartButton.addEventListener("click", startGame);
 rulesButton.addEventListener("click", showRules);
 rulesCloseButton.addEventListener("click", hideRules);
+promotionGroupList.addEventListener("click", handlePromotionGroupClick);
+promotionConfirmButton.addEventListener("click", confirmPromotionBatch);
 rulesOverlay.addEventListener("click", (event) => {
   if (event.target === rulesOverlay) {
     hideRules();
   }
 });
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !promotionOverlay.hidden) {
+    cancelPromotionBatch();
+    return;
+  }
+
   if (event.key === "Escape" && !rulesOverlay.hidden) {
     hideRules();
   }
@@ -162,6 +151,7 @@ function startGame() {
   actionToken += 1;
   hideVictoryVideo();
   hideResultOverlay();
+  cancelPromotionBatch();
   hideRules();
   pieces = createInitialPieces();
   phase = "player";
@@ -172,7 +162,6 @@ function startGame() {
   setMessage("あなたの番", "下位の駒への命令を選び、光っているマスへ自分の駒を動かしてください。");
   updateCommandButtons();
   updateDirectionButtons();
-  updatePromotionPolicyButtons();
   render();
 }
 
@@ -665,6 +654,7 @@ function applyResolvedPlans(side, chosenPlans) {
 
 async function applyResolvedPlansWithChoices(side, chosenPlans, shouldApply = () => true) {
   const movedPlans = applyMovesWithoutPromotion(side, chosenPlans);
+  const promotionChoices = [];
 
   if (!shouldApply()) {
     return;
@@ -675,10 +665,33 @@ async function applyResolvedPlansWithChoices(side, chosenPlans, shouldApply = ()
       continue;
     }
 
-    await handlePromotionAfterMove(piece, plan, shouldApply);
+    const decision = promotionDecisionFor(piece, plan);
+
+    if (decision === "forced" || decision === "auto") {
+      promotePiece(piece);
+    } else if (decision === "choice") {
+      promotionChoices.push({ piece, plan });
+    }
 
     if (!shouldApply()) {
       return;
+    }
+  }
+
+  if (!promotionChoices.length) {
+    return;
+  }
+
+  render();
+  const choicesByType = await askPromotionBatchChoice(promotionChoices);
+
+  if (!shouldApply()) {
+    return;
+  }
+
+  for (const { piece } of promotionChoices) {
+    if (choicesByType[piece.type]) {
+      promotePiece(piece);
     }
   }
 }
@@ -718,20 +731,6 @@ function promoteAfterMove(piece, plan) {
   promotePiece(piece);
 }
 
-async function handlePromotionAfterMove(piece, plan, shouldApply) {
-  const decision = promotionDecisionFor(piece, plan);
-
-  if (decision === "none") {
-    return;
-  }
-
-  if (!shouldApply()) {
-    return;
-  }
-
-  promotePiece(piece);
-}
-
 function promotionDecisionFor(piece, plan) {
   if (!canPromoteAfterMove(piece, plan)) {
     return "none";
@@ -741,15 +740,15 @@ function promotionDecisionFor(piece, plan) {
     return "forced";
   }
 
-  if (usesPromotionPolicy(piece)) {
-    return promotionPolicies[piece.type] ? "auto" : "none";
+  if (canChoosePromotion(piece)) {
+    return "choice";
   }
 
   return "auto";
 }
 
-function usesPromotionPolicy(piece) {
-  return piece.side === "ally" && ALLY_PROMOTION_POLICY_TYPES.has(piece.type);
+function canChoosePromotion(piece) {
+  return piece.side === "ally" && PROMOTABLE_TYPES.has(piece.type);
 }
 
 function promotePiece(piece) {
@@ -1104,6 +1103,150 @@ function hideResultOverlay() {
   resultOverlay.hidden = true;
 }
 
+function askPromotionBatchChoice(promotionChoices) {
+  const groups = promotionGroupsFor(promotionChoices);
+  const choices = Object.fromEntries(groups.map((group) => [group.type, true]));
+
+  promotionOverlay.hidden = false;
+
+  return new Promise((resolve) => {
+    pendingPromotionBatch = { resolve, groups, choices };
+    renderPromotionBatch();
+    promotionConfirmButton.focus?.();
+  });
+}
+
+function promotionGroupsFor(promotionChoices) {
+  const groups = new Map();
+
+  for (const { piece } of promotionChoices) {
+    const group = groups.get(piece.type) || {
+      type: piece.type,
+      label: PIECE_DATA[piece.type].label,
+      promotedLabel: PROMOTED_DATA[piece.type].label,
+      count: 0
+    };
+
+    group.count += 1;
+    groups.set(piece.type, group);
+  }
+
+  return [...groups.values()].sort(
+    (a, b) => PROMOTION_TYPE_ORDER.indexOf(a.type) - PROMOTION_TYPE_ORDER.indexOf(b.type)
+  );
+}
+
+function renderPromotionBatch() {
+  if (!pendingPromotionBatch) {
+    return;
+  }
+
+  promotionGroupList.replaceChildren();
+
+  for (const group of pendingPromotionBatch.groups) {
+    const row = document.createElement("div");
+    row.className = "promotion-choice-row";
+
+    const summary = document.createElement("div");
+    summary.className = "promotion-choice-summary";
+
+    const label = document.createElement("strong");
+    label.textContent = `${group.label} ${group.count}枚`;
+
+    const promotedLabel = document.createElement("span");
+    promotedLabel.textContent = `${group.promotedLabel}へ`;
+
+    summary.append(label, promotedLabel);
+
+    const toggle = document.createElement("div");
+    toggle.className = "promotion-choice-toggle";
+    toggle.setAttribute("role", "group");
+    toggle.setAttribute("aria-label", `${group.label}の成り選択`);
+
+    toggle.append(
+      createPromotionChoiceButton(group.type, "promote", "成る"),
+      createPromotionChoiceButton(group.type, "decline", "成らない")
+    );
+
+    row.append(summary, toggle);
+    promotionGroupList.append(row);
+  }
+}
+
+function createPromotionChoiceButton(type, choice, label) {
+  const button = document.createElement("button");
+  const activeChoice = pendingPromotionBatch.choices[type] ? "promote" : "decline";
+
+  button.type = "button";
+  button.textContent = label;
+  button.dataset.batchPromotionType = type;
+  button.dataset.batchPromotionChoice = choice;
+  button.setAttribute("aria-pressed", String(choice === activeChoice));
+
+  return button;
+}
+
+function handlePromotionGroupClick(event) {
+  if (!pendingPromotionBatch) {
+    return;
+  }
+
+  const button = promotionChoiceButtonFrom(event.target);
+
+  if (!button) {
+    return;
+  }
+
+  pendingPromotionBatch.choices[button.dataset.batchPromotionType] =
+    button.dataset.batchPromotionChoice === "promote";
+  renderPromotionBatch();
+}
+
+function promotionChoiceButtonFrom(target) {
+  let current = target;
+
+  while (current && current !== promotionGroupList) {
+    if (current.dataset?.batchPromotionType) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function confirmPromotionBatch() {
+  if (!pendingPromotionBatch) {
+    hidePromotionOverlay();
+    return;
+  }
+
+  resolvePromotionBatch({ ...pendingPromotionBatch.choices });
+}
+
+function cancelPromotionBatch() {
+  if (!pendingPromotionBatch) {
+    hidePromotionOverlay();
+    return;
+  }
+
+  const choices = Object.fromEntries(pendingPromotionBatch.groups.map((group) => [group.type, false]));
+  resolvePromotionBatch(choices);
+}
+
+function resolvePromotionBatch(choices) {
+  const resolve = pendingPromotionBatch.resolve;
+  pendingPromotionBatch = null;
+  hidePromotionOverlay();
+  resolve(choices);
+}
+
+function hidePromotionOverlay() {
+  promotionOverlay.hidden = true;
+  promotionGroupList.replaceChildren();
+}
+
 function showRules() {
   rulesOverlay.hidden = false;
   rulesButton.setAttribute("aria-expanded", "true");
@@ -1144,15 +1287,6 @@ function updateDirectionButtons() {
 
   for (const button of directionButtons) {
     button.disabled = disabled || !allowedDirections.has(button.dataset.dir);
-  }
-}
-
-function updatePromotionPolicyButtons() {
-  for (const button of promotionPolicyButtons) {
-    const type = button.dataset.promotionType;
-    const wantsPromotion = promotionPolicies[type] !== false;
-    const active = button.dataset.promotionChoice === (wantsPromotion ? "promote" : "decline");
-    button.setAttribute("aria-pressed", String(active));
   }
 }
 

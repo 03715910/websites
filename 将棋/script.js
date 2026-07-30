@@ -21,6 +21,9 @@ const resultEyebrow = document.getElementById("resultEyebrow");
 const resultTitle = document.getElementById("resultTitle");
 const resultText = document.getElementById("resultText");
 const resultSymbol = document.getElementById("resultSymbol");
+const rulesButton = document.getElementById("rulesButton");
+const rulesOverlay = document.getElementById("rulesOverlay");
+const rulesCloseButton = document.getElementById("rulesCloseButton");
 const commandButtons = [...document.querySelectorAll("[data-command]")];
 const directionButtons = [...document.querySelectorAll("[data-dir]")];
 
@@ -108,12 +111,25 @@ victoryVideo.addEventListener("error", () => {
 
 playVictoryButton.addEventListener("click", playVictoryVideo);
 restartButton.addEventListener("click", startGame);
+rulesButton.addEventListener("click", showRules);
+rulesCloseButton.addEventListener("click", hideRules);
+rulesOverlay.addEventListener("click", (event) => {
+  if (event.target === rulesOverlay) {
+    hideRules();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !rulesOverlay.hidden) {
+    hideRules();
+  }
+});
 startGame();
 
 function startGame() {
   actionToken += 1;
   hideVictoryVideo();
   hideResultOverlay();
+  hideRules();
   pieces = createInitialPieces();
   phase = "player";
   selectedCommand = "attack";
@@ -831,6 +847,17 @@ function hideResultOverlay() {
   window.clearTimeout(resultTimer);
   resultTimer = 0;
   resultOverlay.hidden = true;
+}
+
+function showRules() {
+  rulesOverlay.hidden = false;
+  rulesButton.setAttribute("aria-expanded", "true");
+  rulesCloseButton.focus?.();
+}
+
+function hideRules() {
+  rulesOverlay.hidden = true;
+  rulesButton.setAttribute("aria-expanded", "false");
 }
 
 function updatePlayerHints() {

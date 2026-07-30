@@ -13,14 +13,17 @@
           <p class="eyebrow">Rank Command Shogi</p>
           <h1>階級将棋</h1>
         </div>
-        <div class="score-row">
-          <div class="score-card">
-            <span>勝利条件</span>
-            <strong>敵の王を取る</strong>
-          </div>
-          <div class="score-card danger">
-            <span>敗北条件</span>
-            <strong>銀か王を取られる</strong>
+        <div class="hud-actions">
+          <button id="rulesButton" class="rules-button" type="button" aria-haspopup="dialog">ルール</button>
+          <div class="score-row">
+            <div class="score-card">
+              <span>勝利条件</span>
+              <strong>敵の王を取る</strong>
+            </div>
+            <div class="score-card danger">
+              <span>敗北条件</span>
+              <strong>銀か王を取られる</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -49,25 +52,6 @@
             <strong id="message">下位の駒への命令を選び、光っているマスへ銀を動かしてください。</strong>
           </div>
 
-          <div class="rule-box">
-            <h2>ルール</h2>
-            <p>本物の将棋と同じく、味方20枚・敵20枚で開始します。</p>
-            <p>あなたは中間階級の銀です。自分より下の歩・香・桂には大枠の命令を出せます。</p>
-            <p>自分より上、または同格の味方は勝手に動きます。味方でも進路を邪魔することがあります。</p>
-            <p>自分の銀、下位の駒、上位の駒が同時に動いた後、敵が自動で動きます。</p>
-            <p>80ターンで決着がつかない場合は引き分けです。</p>
-          </div>
-
-          <div class="rank-box">
-            <h2>階級</h2>
-            <ol>
-              <li>王: 取られると負け</li>
-              <li>飛・角・金</li>
-              <li>銀: あなた</li>
-              <li>桂・香・歩: 命令できる兵士</li>
-            </ol>
-          </div>
-
           <button id="restartButton" type="button">最初から</button>
         </aside>
       </section>
@@ -87,6 +71,39 @@
         <strong id="resultTitle">敗北</strong>
         <span id="resultText">自分の駒を取られました。</span>
       </div>
+    </div>
+
+    <div id="rulesOverlay" class="rules-overlay" hidden>
+      <section class="rules-dialog" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+        <header class="rules-header">
+          <div>
+            <p class="eyebrow">How To Play</p>
+            <h2 id="rulesTitle">ルール</h2>
+          </div>
+          <button id="rulesCloseButton" class="rules-close" type="button" aria-label="ルールを閉じる">×</button>
+        </header>
+
+        <div class="rules-content">
+          <section class="rules-section">
+            <h3>基本</h3>
+            <p>本物の将棋と同じく、味方20枚・敵20枚で開始します。</p>
+            <p>あなたは中間階級の銀です。自分より下の歩・香・桂には大枠の命令を出せます。</p>
+            <p>自分より上、または同格の味方は勝手に動きます。味方でも進路を邪魔することがあります。</p>
+            <p>自分の銀、下位の駒、上位の駒が同時に動いた後、敵が自動で動きます。</p>
+            <p>80ターンで決着がつかない場合は引き分けです。</p>
+          </section>
+
+          <section class="rules-section">
+            <h3>階級</h3>
+            <ol>
+              <li>王: 取られると負け</li>
+              <li>飛・角・金</li>
+              <li>銀: あなた</li>
+              <li>桂・香・歩: 命令できる兵士</li>
+            </ol>
+          </section>
+        </div>
+      </section>
     </div>
 
     <script src="script.js"></script>

@@ -48,6 +48,12 @@ button {
   margin-bottom: 18px;
 }
 
+.hud-actions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
 .eyebrow,
 .panel-label {
   margin: 0 0 6px;
@@ -79,14 +85,24 @@ h1 {
 
 .score-card,
 .turn-box,
-.rule-box,
-.rank-box,
 .command-panel {
   border: 1px solid rgba(255, 243, 208, 0.2);
   border-radius: 8px;
   background: rgba(255, 243, 208, 0.94);
   color: var(--ink);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
+}
+
+.rules-button {
+  min-height: 42px;
+  min-width: 92px;
+  border: 1px solid rgba(255, 243, 208, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 243, 208, 0.94);
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
 }
 
 .score-card {
@@ -375,40 +391,14 @@ h1 {
   min-height: 2.6em;
 }
 
-.rule-box,
-.rank-box {
-  padding: 18px;
-}
-
-.rule-box h2,
-.rank-box h2 {
-  margin-bottom: 10px;
-  font-size: 1.2rem;
-}
-
-.rule-box p {
-  margin-bottom: 10px;
-  color: var(--muted);
-  font-weight: 650;
-}
-
-.rule-box p:last-child {
-  margin-bottom: 0;
-}
-
-.rank-box ol {
-  margin: 0;
-  padding-left: 1.4rem;
-  color: var(--muted);
-  font-weight: 800;
-}
-
 #restartButton {
   background: #f6c84f;
 }
 
 #restartButton:focus-visible,
-.segmented button:focus-visible {
+.segmented button:focus-visible,
+.rules-button:focus-visible,
+.rules-close:focus-visible {
   outline: 3px solid rgba(246, 200, 79, 0.42);
   outline-offset: 3px;
 }
@@ -634,6 +624,107 @@ button:disabled {
   }
 }
 
+.rules-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: start end;
+  padding: clamp(12px, 3vw, 32px);
+  background: rgba(0, 0, 0, 0.52);
+}
+
+.rules-overlay[hidden] {
+  display: none;
+}
+
+.rules-dialog {
+  width: min(100%, 520px);
+  max-height: min(760px, calc(100vh - 24px));
+  overflow: auto;
+  border: 1px solid rgba(255, 243, 208, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 243, 208, 0.98);
+  color: var(--ink);
+  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.48);
+  animation: rulesEnter 220ms ease-out both;
+}
+
+.rules-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 12px;
+  background: rgba(255, 243, 208, 0.98);
+  border-bottom: 1px solid rgba(56, 34, 15, 0.16);
+}
+
+.rules-header h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 6vw, 2.8rem);
+  line-height: 1;
+}
+
+.rules-close {
+  width: 42px;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 8px;
+  background: #f6c84f;
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rules-content {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.rules-section {
+  display: grid;
+  gap: 10px;
+}
+
+.rules-section h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.rules-section p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.rules-section ol {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+@keyframes rulesEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 900px) {
   .hud,
   .play-area,
@@ -644,6 +735,10 @@ button:disabled {
   .hud {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .hud-actions {
+    justify-items: stretch;
   }
 }
 
